@@ -1,0 +1,37 @@
+
+Bicycle
+=======
+
+[] basic schematic
+[] breadboard of device
+
+
+[] get MIDI in
+[] record to buffer
+[] end record on "end hit"
+[] playback buffer
+[] merge with buffer
+[] clear on record
+[] "the one" output trigger
+
+[] process output midi
+	[] output to MIDI on another set of channels
+	[] output to output handler (see below)
+
+[] channel to differentiate two channels of loop
+[] note velocity to CV V
+[] radius CC to CV R
+[] note on / off to trig 1
+
+[] mute control (keeps things playing)
+
+
+
+
+
+
+Later
+-----
+[] async the loops if desired
+
+
