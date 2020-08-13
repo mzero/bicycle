@@ -96,28 +96,37 @@ void Loop::advance(DeltaTime dt, EventFunc f) {
   if (!recentCell) return;
 
   if (recentCell->atEnd()) {
-    // FIXME: handle overflow
+    if (dt > maxEventInterval - timeSinceRecent) {
+      clear();
+      arm();
+      return;
+    }
+
     timeSinceRecent += dt;
     return;
   }
 
-  while (dt) {
-    DeltaTime now = timeSinceRecent + dt;
-    if (now < recentCell->nextTime) {
-      timeSinceRecent = now;
-      return;
-    }
+  while (recentCell->nextTime <= timeSinceRecent + dt) {
+    // time to move to the next event, and play it
 
-    // advance to next event
-    dt = now - recentCell->nextTime;
-    timeSinceRecent = 0;
-    recentCell = recentCell->next();
-    if (recentCell->epoch == epoch) {
-      // FIXME: delete this cell....
-    } else {
+    Cell* nextCell = recentCell->next();
+    if (nextCell->epoch != epoch) {
+      // not from this epoch, so play it
+      dt -= recentCell->nextTime - timeSinceRecent;
+      timeSinceRecent = 0;
+
+      recentCell = nextCell;
+      recentCell->epoch = 0; // force to permanent epoch
       f(recentCell->event);
+    } else {
+      // prior data from this epoch, delete it
+      recentCell->link(nextCell->next());
+      recentCell->nextTime += nextCell->nextTime;
+      nextCell->free();
     }
   }
+
+  timeSinceRecent += dt;
 }
 
 

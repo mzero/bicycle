@@ -7,6 +7,11 @@
 typedef uint16_t DeltaTime;
 typedef uint8_t MidiEvent[3];
 
+const DeltaTime maxEventInterval = 20000;
+  // maximum amount of time spent waiting for a new event
+
+
+
 typedef void (*EventFunc)(const MidiEvent&);
   // TODO: Needs time somehow? delta? absolute?
 

@@ -2,16 +2,49 @@
 Bicycle
 =======
 
-[] basic schematic
-[] breadboard of device
+[x] USB CIN value on play
+[x] handle time overflow gracefully
+[x] delete unsaved epoch notes
+[x] play events when recording them
+[] play first event on keep()
+
+[] fix the packet / midi types to something safe!!!
+
+[] map Boppad triggers
+	[] notes
+	[] cc for radii
+[] boppad notes trigger trigger outputs on buddy
+[] "the one" trigger
+[] use Pi to route midi:
+	boppad -> pi -> buddy
+	blueboard -> pi -> buddy
+	buddy -> pi -> pisound din midi -> pulsar
 
 
-[] get MIDI in
-[] record to buffer
-[] end record on "end hit"
-[] playback buffer
+[] all notes off when clearing
+	- otherwise things get stuck on
+	? track or use the magic thing?
+		0xBn 123 0 , for n in (0,15)
+	? OR - track off as a duration of a hit, queue those to play separately?
+		- and so they trail off and turn off as they would have
+
+
+[] loop controls extracted from CC commands should
+	perhaps be filtered by channel? configurable?
+
+
+
+[] Layers, not epochs?
+	[] layer is just last loop's worth, or sum since start?
+		- user option?
+	[] controls for limiting range of layers played, hi and lo!
+	[] clear layer? trim to playing layers?
+	[] are 256 layers enough? probably?
+
+
+
+
 [] merge with buffer
-[] clear on record
 [] "the one" output trigger
 
 [] process output midi
@@ -35,3 +68,8 @@ Later
 [] async the loops if desired
 
 
+
+Hardware
+--------
+[] basic schematic
+[] breadboard of device
