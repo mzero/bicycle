@@ -17,18 +17,20 @@ typedef void (*EventFunc)(const MidiEvent&);
 
 class Loop {
 public:
-  Loop();
+  Loop(EventFunc);
 
-  void advance(DeltaTime, EventFunc);
+  void advance(DeltaTime);
   void addEvent(const MidiEvent&);
   void keep();
-  void arm();
+  void arm();       // clear when next event added
   void clear();
 
   static void begin();
 
 private:
-  bool      armed;   // clear when next event added
+  const EventFunc player;
+
+  bool      armed;
   uint8_t   epoch;
 
   class Cell;

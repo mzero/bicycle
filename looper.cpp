@@ -85,14 +85,15 @@ void Loop::Cell::begin() {
 }
 
 
-Loop::Loop()
-  : armed(true), epoch(1),
+Loop::Loop(EventFunc func)
+  : player(func),
+    armed(true), epoch(1),
     firstCell(nullptr), recentCell(nullptr),
     timeSinceRecent(0)
   { }
 
 
-void Loop::advance(DeltaTime dt, EventFunc f) {
+void Loop::advance(DeltaTime dt) {
   if (!recentCell) return;
 
   if (recentCell->atEnd()) {
@@ -117,7 +118,7 @@ void Loop::advance(DeltaTime dt, EventFunc f) {
 
       recentCell = nextCell;
       recentCell->epoch = 0; // force to permanent epoch
-      f(recentCell->event);
+      player(recentCell->event);
     } else {
       // prior data from this epoch, delete it
       recentCell->link(nextCell->next());
@@ -166,14 +167,14 @@ void Loop::keep() {
     // closing the loop
     recentCell->link(firstCell);
     recentCell->nextTime = timeSinceRecent;
-    recentCell = firstCell;
-    timeSinceRecent = 0;
     firstCell = nullptr;
-    // FIXME: Need to play the first event here
   }
 
   // ending the epoch
   epoch = epoch == 255 ? 1 : epoch + 1;
+
+  // advance into the start of the loop
+  advance(0);
 }
 
 void Loop::arm() {

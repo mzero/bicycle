@@ -7,7 +7,6 @@
 Adafruit_USBD_MIDI usb_midi;
 
 
-Loop theLoop;
 
 
 void playEvent(const MidiEvent& ev) {
@@ -22,9 +21,11 @@ void playEvent(const MidiEvent& ev) {
   packet[3] = ev[2];
 
   usb_midi.send(packet);
-  Serial.printf("usb_midi.sending %02x %02x %02x %02x\n",
-    packet[0], packet[1], packet[2], packet[3]);
 }
+
+Loop theLoop(playEvent);
+
+
 
 void noteEvent(const MidiEvent& ev) {
   switch (ev[0] & 0xf0) {
@@ -86,7 +87,7 @@ void loop() {
   uint32_t now = millis();
 
   if (now > then) {
-    theLoop.advance(now - then, playEvent);
+    theLoop.advance(now - then);
     then = now;
   }
 
@@ -94,8 +95,6 @@ void loop() {
   if (usb_midi.receive(packet)) {
 
     notePacket(packet);
-    Serial.printf("usb_midi.receive'd %02x %02x %02x %02x\n",
-      packet[0], packet[1], packet[2], packet[3]);
   }
 }
 

@@ -2,23 +2,56 @@
 Bicycle
 =======
 
-[x] USB CIN value on play
-[x] handle time overflow gracefully
-[x] delete unsaved epoch notes
-[x] play events when recording them
 [] play first event on keep()
+	[] register call back on ctor
 
 [] fix the packet / midi types to something safe!!!
+
+[] absolute time in Looper
+
+[] switch to note lengths
+	[] queue of note offs
+	[]
+
+[] note offs
+	[] for percussion - just ignore?
+	[] meld into note on
+	[] track playing & note off pending
+
+
+[] interpret some notes as triggers
+
+[] auto record a note at start
+	- serves as start of loop
+	- map to one of the trigger outs
+
+[] display info
+	- length of loop
+	- cells in use / free
+	- state: arm'd / rec'g / over'g
+	- place in loop
+
+[] rationalize channels?
+
+
 
 [] map Boppad triggers
 	[] notes
 	[] cc for radii
 [] boppad notes trigger trigger outputs on buddy
-[] "the one" trigger
 [] use Pi to route midi:
 	boppad -> pi -> buddy
 	blueboard -> pi -> buddy
 	buddy -> pi -> pisound din midi -> pulsar
+
+
+laters
+======
+
+[] double / half loop
+
+
+
 
 
 [] all notes off when clearing
