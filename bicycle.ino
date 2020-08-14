@@ -2,6 +2,8 @@
 #include <Adafruit_TinyUSB.h>
 
 #include "looper.h"
+#include "types.h"
+
 
 // USB MIDI object
 Adafruit_USBD_MIDI usb_midi;

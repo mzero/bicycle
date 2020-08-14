@@ -2,9 +2,6 @@
 Bicycle
 =======
 
-[] play first event on keep()
-	[] register call back on ctor
-
 [] fix the packet / midi types to something safe!!!
 
 [] absolute time in Looper

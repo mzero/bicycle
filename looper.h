@@ -3,13 +3,12 @@
 
 #include <cstdint>
 
+#include "cell.h"
+#include "types.h"
 
-typedef uint16_t DeltaTime;
-typedef uint8_t MidiEvent[3];
 
 const DeltaTime maxEventInterval = 20000;
   // maximum amount of time spent waiting for a new event
-
 
 
 typedef void (*EventFunc)(const MidiEvent&);
@@ -33,7 +32,6 @@ private:
   bool      armed;
   uint8_t   epoch;
 
-  class Cell;
   Cell* firstCell;
   Cell* recentCell;
   DeltaTime timeSinceRecent;
