@@ -2,18 +2,14 @@
 Bicycle
 =======
 
-[x] fix the packet / midi types to something safe!!!
+[x] absolute time in Looper
 
-[] absolute time in Looper
+[x] switch to note lengths
+	[x] queue of note offs
+	[x] pending offs by note
+		[x] keep absolute time of start (keep as array)
+		[x] clear await on clear
 
-[] switch to note lengths
-	[] queue of note offs
-	[]
-
-[] note offs
-	[] for percussion - just ignore?
-	[] meld into note on
-	[] track playing & note off pending
 
 
 [] interpret some notes as triggers
@@ -29,6 +25,11 @@ Bicycle
 	- place in loop
 
 [] rationalize channels?
+
+[] clean up delta times and checking for overflows
+	- durations on note off
+	- advance big jump
+	- others?
 
 
 

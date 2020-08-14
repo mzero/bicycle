@@ -89,13 +89,12 @@ void loop() {
   uint32_t now = millis();
 
   if (now > then) {
-    theLoop.advance(now - then);
+    theLoop.advance(now);
     then = now;
   }
 
   uint8_t packet[4];
-  if (usb_midi.receive(packet)) {
-
+  while (usb_midi.receive(packet)) {
     notePacket(packet);
   }
 }
