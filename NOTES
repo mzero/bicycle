@@ -2,7 +2,7 @@
 Bicycle
 =======
 
-[] fix the packet / midi types to something safe!!!
+[x] fix the packet / midi types to something safe!!!
 
 [] absolute time in Looper
 

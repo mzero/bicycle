@@ -14,13 +14,13 @@ Adafruit_USBD_MIDI usb_midi;
 void playEvent(const MidiEvent& ev) {
   uint8_t packet[4];
 
-  packet[0] = 0 | (ev[0] >> 4);
+  packet[0] = 0 | (ev.status >> 4);
     // TODO: This works because of the limited range of things the
     // noteEvent() accepts into the looper... but this should be
     // fixed support all messages just to be safe.
-  packet[1] = ev[0];
-  packet[2] = ev[1];
-  packet[3] = ev[2];
+  packet[1] = ev.status;
+  packet[2] = ev.data1;
+  packet[3] = ev.data2;
 
   usb_midi.send(packet);
 }
@@ -30,17 +30,17 @@ Loop theLoop(playEvent);
 
 
 void noteEvent(const MidiEvent& ev) {
-  switch (ev[0] & 0xf0) {
+  switch (ev.status & 0xf0) {
     case 0x80: // Note Off
     case 0x90: // Note On
     case 0xa0: // Poly Aftertouch
       break;
 
     case 0xb0: // CC
-      switch (ev[1]) {
-        case 44:  if (ev[2]) theLoop.arm();    return;
-        case 46:  if (ev[2]) theLoop.clear();  return;
-        case 49:  if (ev[2]) theLoop.keep();   return;
+      switch (ev.data1) {
+        case 44:  if (ev.data2) theLoop.arm();    return;
+        case 46:  if (ev.data2) theLoop.clear();  return;
+        case 49:  if (ev.data2) theLoop.keep();   return;
       }
       break;
 
@@ -64,9 +64,9 @@ void noteEvent(const MidiEvent& ev) {
 
 void notePacket(const uint8_t packet[4]) {
   MidiEvent ev;
-  ev[0] = packet[1];
-  ev[1] = packet[2];
-  ev[2] = packet[3];
+  ev.status = packet[1];
+  ev.data1 = packet[2];
+  ev.data2 = packet[3];
   noteEvent(ev);
 }
 

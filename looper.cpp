@@ -61,7 +61,7 @@ void Loop::addEvent(const MidiEvent& ev) {
 
   Cell* newCell = Cell::alloc();
   if (!newCell) return; // ran out of cells!
-  memcpy(newCell->event, ev, sizeof(ev));
+  newCell->event = ev;
   newCell->epoch = epoch;
 
   if (recentCell) {
