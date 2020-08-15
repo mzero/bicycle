@@ -21,9 +21,13 @@ public:
 
   void advance(AbsTime);
   void addEvent(const MidiEvent&);
-  void keep();
-  void arm();       // clear when next event added
+  void keep();      // arm next layer
+  void arm();       // clear whole loop when next event added
   void clear();
+
+  void layerMute(uint8_t layer, bool muted);
+  void layerVolume(uint8_t layer, uint8_t volume);
+  void layerArm(uint8_t layer);   // start overwriting this layer on next event
 
   static void begin();
 
@@ -33,7 +37,11 @@ private:
   AbsTime   walltime;
 
   bool      armed;
-  uint8_t   epoch;
+
+  uint8_t activeLayer;
+  bool layerArmed;
+  std::array<bool, 9> layerMutes;
+  std::array<uint8_t, 9> layerVolumes;
 
   Cell* firstCell;
   Cell* recentCell;

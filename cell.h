@@ -9,7 +9,7 @@ const CellIndex nullIndex = 0xffff;
 
 struct Cell {
 public:
-  uint8_t     epoch;
+  uint8_t     layer;
   MidiEvent   event;
   DeltaTime   duration;
   DeltaTime   nextTime;

@@ -6,6 +6,19 @@
 #include "cell.h"
 
 
+namespace {
+  template<typename T>
+  inline T clamp(T v, T lo, T hi) {
+    return v < lo ? lo : v <= hi ? v : hi;
+  }
+
+  inline uint8_t scaleVelocity(uint8_t vel, uint8_t vol) {
+    return static_cast<uint8_t>(clamp(
+      static_cast<uint32_t>(vel) * static_cast<uint32_t>(vol) / 100,
+      1ul, 127ul));
+  }
+}
+
 class Loop::Util {
 public:
   static void startAwaitingOff(Loop& loop, Cell* cell) {
@@ -40,11 +53,14 @@ public:
 Loop::Loop(EventFunc func)
   : player(func),
     walltime(0),
-    armed(true), epoch(1),
+    armed(true), activeLayer(0), layerArmed(false),
     firstCell(nullptr), recentCell(nullptr),
     timeSinceRecent(0),
     pendingOff(nullptr)
   {
+    for (auto& m : layerMutes) m = false;
+    for (auto& v : layerVolumes) v = 100;
+
     Util::clearAwatingOff(*this);
   }
 
@@ -94,32 +110,42 @@ void Loop::advance(AbsTime now) {
     // time to move to the next event, and play it
 
     Cell* nextCell = recentCell->next();
-    if (nextCell->epoch != epoch) {
-      // not from this epoch, so play it
-      dt -= recentCell->nextTime - timeSinceRecent;
-      timeSinceRecent = 0;
+    auto layer = nextCell->layer;
 
-      recentCell = nextCell;
-      recentCell->epoch = 0; // force to permanent epoch
-      player(recentCell->event);
-
-      if (recentCell->event.isNoteOn() && recentCell->duration > 0) {
-        Cell* offCell = Cell::alloc();
-        offCell->event.status = recentCell->event.status;
-        offCell->event.data1 = recentCell->event.data1;
-        offCell->event.data2 = 0;
-        offCell->duration = recentCell->duration;
-        offCell->link(pendingOff);
-        pendingOff = offCell;
-      }
-    } else {
-      // prior data from this epoch, delete it
+    if (layer == activeLayer && !layerArmed) {
+      // prior data from this layer currently recording into, delete it
+      // note: if the layer is armed, then awaiting first event to start
+      // recording
       if (nextCell->event.isNoteOn())
         Util::cancelAwatingOff(*this, nextCell);
 
       recentCell->link(nextCell->next());
       recentCell->nextTime += nextCell->nextTime;
       nextCell->free();
+    } else {
+      dt -= recentCell->nextTime - timeSinceRecent;
+      timeSinceRecent = 0;
+
+      recentCell = nextCell;
+
+      if (!(layer < layerMutes.size() && layerMutes[layer])) {
+
+        if (recentCell->event.isNoteOn() && recentCell->duration > 0) {
+          MidiEvent note = recentCell->event;
+          if (layer < layerVolumes.size())
+            note.data2 = scaleVelocity(note.data2, layerVolumes[layer]);
+          player(note);
+
+          Cell* offCell = Cell::alloc();
+          offCell->event = note;
+          offCell->event.data2 = 0; // volume 0 makes it a NoteOff
+          offCell->duration = recentCell->duration;
+          offCell->link(pendingOff);
+          pendingOff = offCell;
+        } else {
+          player(recentCell->event);
+        }
+      }
     }
   }
 
@@ -138,11 +164,24 @@ void Loop::addEvent(const MidiEvent& ev) {
     clear();
     armed = false;
   }
+  layerArmed = false;
+  if (activeLayer < layerMutes.size())
+    layerMutes[activeLayer] = false;
+    // TODO: Should we be doing this? how to communicate back to controller?
+
+  if (ev.isNoteOn()) {
+    MidiEvent note = ev;
+    if (activeLayer < layerVolumes.size())
+      note.data2 = scaleVelocity(note.data2, layerVolumes[activeLayer]);
+    player(note);
+  } else {
+    player(ev);
+  }
 
   Cell* newCell = Cell::alloc();
   if (!newCell) return; // ran out of cells!
   newCell->event = ev;
-  newCell->epoch = epoch;
+  newCell->layer = activeLayer;
   newCell->duration = 0;
 
   if (ev.isNoteOn())
@@ -175,8 +214,8 @@ void Loop::keep() {
     firstCell = nullptr;
   }
 
-  // ending the epoch
-  epoch = epoch == 255 ? 1 : epoch + 1;
+  activeLayer += activeLayer < (layerMutes.size() - 1) ? 1 : 0;
+  layerArmed = true;
 
   // advance into the start of the loop
   advance(walltime);
@@ -203,7 +242,25 @@ void Loop::clear() {
   recentCell = nullptr;
   timeSinceRecent = 0;
   armed = true;
-  epoch = 1;
+  activeLayer = 0;
+  layerArmed = false;
+  for (auto& m : layerMutes) m = false;
+    // TODO: Should we be doing this? how to communicate back to controller?
+}
+
+
+void Loop::layerMute(uint8_t layer, bool muted) {
+  if (layer < layerMutes.size()) layerMutes[layer] = muted;
+}
+
+void Loop::layerVolume(uint8_t layer, uint8_t volume) {
+  if (layer < layerVolumes.size()) layerVolumes[layer] = volume;
+}
+
+void Loop::layerArm(uint8_t layer) {
+  // FIXME: what to do if still recording initial layer?
+  activeLayer = layer;
+  layerArmed = true;
 }
 
 void Loop::begin() {
