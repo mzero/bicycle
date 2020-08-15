@@ -9,10 +9,36 @@
 Adafruit_USBD_MIDI usb_midi;
 
 
+enum Pin : uint32_t {
+  pinSequence = PIN_SPI_MOSI,
+  pinMeasure = PIN_SERIAL1_TX,
+  pinBeat = PIN_SPI_SCK,
+  pinTuplet = PIN_SPI_MISO,
+};
 
+enum PinNote : uint8_t {
+  pinNoteSequence = 50,
+  pinNoteMeasure = 51,
+  pinNoteBeat = 38,
+  pinNoteTuplet = 36,
+};
+
+void playTrigger(uint8_t note, uint32_t level) {
+  switch (note) {
+    case pinNoteSequence:   digitalWrite(pinSequence, level);   break;
+    case pinNoteMeasure:    digitalWrite(pinMeasure,  level);   break;
+    case pinNoteBeat:       digitalWrite(pinBeat,     level);   break;
+    case pinNoteTuplet:     digitalWrite(pinTuplet,   level);   break;
+    default: ;
+  }
+}
 
 void playEvent(const MidiEvent& ev) {
   uint8_t packet[4];
+
+  if (ev.isNoteOff())       playTrigger(ev.data1, HIGH);
+  else if (ev.isNoteOn())   playTrigger(ev.data1, LOW);
+
 
   packet[0] = 0 | (ev.status >> 4);
     // TODO: This works because of the limited range of things the
@@ -75,6 +101,15 @@ void notePacket(const uint8_t packet[4]) {
 void setup() {
   Serial.begin(115200);
   while (!Serial);
+
+  pinMode(pinSequence, OUTPUT);
+  pinMode(pinMeasure, OUTPUT);
+  pinMode(pinBeat, OUTPUT);
+  pinMode(pinTuplet, OUTPUT);
+  digitalWrite(pinSequence, HIGH);
+  digitalWrite(pinMeasure, HIGH);
+  digitalWrite(pinBeat, HIGH);
+  digitalWrite(pinTuplet, HIGH);
 
   theLoop.begin();
 

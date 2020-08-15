@@ -13,6 +13,11 @@ Bicycle
 
 
 [] interpret some notes as triggers
+	Sequence: pin D23 (MOSI), ch 2 note 50
+	Measure: pin D1 (TX)
+	Beat: pin D24 (SCK), ch 1 note 38
+	Tuplet: pin D22 (MISO), ch 1 note 36
+
 
 [] auto record a note at start
 	- serves as start of loop
@@ -33,10 +38,15 @@ Bicycle
 
 
 
-[] map Boppad triggers
-	[] notes
-	[] cc for radii
-[] boppad notes trigger trigger outputs on buddy
+[x] map Boppad triggers
+	Bottom two pads
+		ch 1, note 36 & note 38
+		c1 1, cc 70, 71 are initial radius
+	Top two pads
+		ch 2, note 48 & note 42
+
+	use ch 2, note 50 as "loop start"
+
 [] use Pi to route midi:
 	boppad -> pi -> buddy
 	blueboard -> pi -> buddy
@@ -46,48 +56,32 @@ Bicycle
 laters
 ======
 
-[] double / half loop
 
-
-
-
-
-[] all notes off when clearing
-	- otherwise things get stuck on
-	? track or use the magic thing?
-		0xBn 123 0 , for n in (0,15)
-	? OR - track off as a duration of a hit, queue those to play separately?
-		- and so they trail off and turn off as they would have
 
 
 [] loop controls extracted from CC commands should
 	perhaps be filtered by channel? configurable?
 
-
-
 [] Layers, not epochs?
 	[] layer is just last loop's worth, or sum since start?
 		- user option?
 	[] controls for limiting range of layers played, hi and lo!
+		- can do proportional fades!
 	[] clear layer? trim to playing layers?
 	[] are 256 layers enough? probably?
+	[] layer volumes?
 
 
+[] other possible controls
+	[] clear last layer/epoch
+	[] clear current epoch/layer (so you can start without waiting for the repeat)
+	[] mute control (keeps things playing)
+
+[] double / half loop
+
+[] two loops?
 
 
-[] merge with buffer
-[] "the one" output trigger
-
-[] process output midi
-	[] output to MIDI on another set of channels
-	[] output to output handler (see below)
-
-[] channel to differentiate two channels of loop
-[] note velocity to CV V
-[] radius CC to CV R
-[] note on / off to trig 1
-
-[] mute control (keeps things playing)
 
 
 
