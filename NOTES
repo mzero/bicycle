@@ -2,50 +2,32 @@
 Bicycle
 =======
 
-[x] absolute time in Looper
-
-[x] switch to note lengths
-	[x] queue of note offs
-	[x] pending offs by note
-		[x] keep absolute time of start (keep as array)
-		[x] clear await on clear
-
-
-
-[] interpret some notes as triggers
-	Sequence: pin D23 (MOSI), ch 2 note 50
-	Measure: pin D1 (TX)
-	Beat: pin D24 (SCK), ch 1 note 38
-	Tuplet: pin D22 (MISO), ch 1 note 36
-
-
-[] auto record a note at start
-	- serves as start of loop
-	- map to one of the trigger outs
-
 [] display info
 	- length of loop
 	- cells in use / free
 	- state: arm'd / rec'g / over'g
 	- place in loop
 
-[] rationalize channels?
+[] layer range controls
+
+[] layer fixes
+	[] when armed, layers overwrite, but when you hit keep, it moves
+		to next layer, and may leave remnants if you don't play a whole
+		repeat
+		- either a command to clear the layer
+		- or clear the layer on arm
+		- or accept the punch-in/punch-out behavior as correct
+		- or have keep stay on same layer?
+	[] a way to over-dub into a layer, not punch?
+
+[] auto record a note at start
+	- serves as start of loop
+	- map to one of the trigger outs
 
 [] clean up delta times and checking for overflows
 	- durations on note off
 	- advance big jump
 	- others?
-
-
-
-[x] map Boppad triggers
-	Bottom two pads
-		ch 1, note 36 & note 38
-		c1 1, cc 70, 71 are initial radius
-	Top two pads
-		ch 2, note 48 & note 42
-
-	use ch 2, note 50 as "loop start"
 
 [] use Pi to route midi:
 	boppad -> pi -> buddy
@@ -56,30 +38,21 @@ Bicycle
 laters
 ======
 
+[] rationalize channels?
+	- ch. 16 is control
+	- but somethings on playing channels could be control
+      like sustain pedal (CC 64) for "keep" function
 
-
-
-[] loop controls extracted from CC commands should
-	perhaps be filtered by channel? configurable?
-
-[] Layers, not epochs?
-	[] layer is just last loop's worth, or sum since start?
-		- user option?
-	[] controls for limiting range of layers played, hi and lo!
-		- can do proportional fades!
-	[] clear layer? trim to playing layers?
-	[] are 256 layers enough? probably?
-	[] layer volumes?
-
+[] some configuration system
 
 [] other possible controls
 	[] clear last layer/epoch
-	[] clear current epoch/layer (so you can start without waiting for the repeat)
-	[] mute control (keeps things playing)
 
 [] double / half loop
 
 [] two loops?
+[] different length layers? (would be like multiple loops, sync'd to
+	ration of lengths)
 
 
 
@@ -98,3 +71,7 @@ Hardware
 --------
 [] basic schematic
 [] breadboard of device
+
+
+
+Notes

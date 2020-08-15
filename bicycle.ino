@@ -8,6 +8,15 @@
 // USB MIDI object
 Adafruit_USBD_MIDI usb_midi;
 
+/*
+                            boppad assignments
+  Sequence: pin D23 (MOSI)  ch 2 note 50
+  Measure:  pin D1  (TX)
+  Beat:     pin D24 (SCK)   ch 1 note 38
+  Tuplet:   pin D22 (MISO)  ch 1 note 36
+
+  ch 1 cc 70 & 71 are radius on boppad lower two pads
+*/
 
 enum Pin : uint32_t {
   pinSequence = PIN_SPI_MOSI,
