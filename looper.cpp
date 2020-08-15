@@ -128,15 +128,15 @@ void Loop::advance(AbsTime now) {
 
 
 void Loop::addEvent(const MidiEvent& ev) {
-  if (armed) {
-    clear();
-    armed = false;
-  }
-
   if (ev.isNoteOff()) {
     // note off processing
     Util::finishAwaitingOff(*this, ev);
     return;
+  }
+
+  if (armed) {
+    clear();
+    armed = false;
   }
 
   Cell* newCell = Cell::alloc();
