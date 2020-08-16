@@ -95,8 +95,6 @@ void Loop::advance(AbsTime now) {
   if (!recentCell) return;
 
   if (recentCell->atEnd()) {
-    walltime = now;
-
     if (dt > maxEventInterval - timeSinceRecent) {
       clear();
       return;
@@ -261,6 +259,17 @@ void Loop::layerArm(uint8_t layer) {
   // FIXME: what to do if still recording initial layer?
   activeLayer = layer;
   layerArmed = true;
+}
+
+Loop::Status Loop::status() const {
+  Status s;
+  s.length = 23100;
+  s.position = 12750;
+  s.activeLayer = activeLayer;
+  s.looping = !firstCell;
+  s.armed = armed;
+  s.layerArmed = layerArmed;
+  return s;
 }
 
 void Loop::begin() {

@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <Adafruit_TinyUSB.h>
 
+#include "display.h"
 #include "looper.h"
 #include "types.h"
 
@@ -156,6 +157,8 @@ void notePacket(const uint8_t packet[4]) {
 
 
 void setup() {
+  displaySetup();
+
   Serial.begin(115200);
   while (!Serial);
 
@@ -189,6 +192,9 @@ void loop() {
   while (usb_midi.receive(packet)) {
     notePacket(packet);
   }
+
+  Loop::Status s = theLoop.status();
+  displayUpdate(now, false, s);
 }
 
 

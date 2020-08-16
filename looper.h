@@ -15,6 +15,9 @@ const DeltaTime maxEventInterval = 20000;
 typedef void (*EventFunc)(const MidiEvent&);
   // TODO: Needs time somehow? delta? absolute?
 
+
+
+
 class Loop {
 public:
   Loop(EventFunc);
@@ -28,6 +31,18 @@ public:
   void layerMute(uint8_t layer, bool muted);
   void layerVolume(uint8_t layer, uint8_t volume);
   void layerArm(uint8_t layer);   // start overwriting this layer on next event
+
+
+  struct Status {
+    AbsTime     length;
+    AbsTime     position;
+    uint8_t     activeLayer;
+    bool        looping;
+    bool        armed;
+    bool        layerArmed;
+  };
+
+  Status status() const;
 
   static void begin();
 
