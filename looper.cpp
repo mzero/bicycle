@@ -55,7 +55,7 @@ Loop::Loop(EventFunc func)
     walltime(0),
     armed(true), activeLayer(0), layerArmed(false),
     firstCell(nullptr), recentCell(nullptr),
-    timeSinceRecent(0),
+    timeSinceRecent(0), length(0), position(0),
     pendingOff(nullptr)
   {
     for (auto& m : layerMutes) m = false;
@@ -101,8 +101,11 @@ void Loop::advance(AbsTime now) {
     }
 
     timeSinceRecent += dt;
+    length += dt;
+    position += dt;
     return;
   }
+  position = (position + dt) % length;
 
   while (recentCell->nextTime <= timeSinceRecent + dt) {
     // time to move to the next event, and play it
@@ -239,6 +242,8 @@ void Loop::clear() {
   firstCell = nullptr;
   recentCell = nullptr;
   timeSinceRecent = 0;
+  length = 0;
+  position = 0;
   armed = true;
   activeLayer = 0;
   layerArmed = false;
@@ -263,8 +268,8 @@ void Loop::layerArm(uint8_t layer) {
 
 Loop::Status Loop::status() const {
   Status s;
-  s.length = 23100;
-  s.position = 12750;
+  s.length = length;
+  s.position = position;
   s.activeLayer = activeLayer;
   s.looping = !firstCell;
   s.armed = armed;

@@ -62,6 +62,9 @@ private:
   Cell* recentCell;
   DeltaTime timeSinceRecent;
 
+  AbsTime length;
+  AbsTime position;
+
   struct AwaitOff {
     Cell* cell;
     AbsTime start;
