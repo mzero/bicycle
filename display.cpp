@@ -90,6 +90,7 @@ namespace {
     value_t drawnValue;
   };
 
+
   class LengthField : public TextField<AbsTime> {
   public:
     LengthField(int16_t x, int16_t y, uint16_t w, uint16_t h)
@@ -103,9 +104,54 @@ namespace {
   };
 
 
+  class LayerField : public Field {
+  public:
+    LayerField(int16_t x, int16_t y, uint16_t w, uint16_t h)
+      : Field(x, y, w, h) { }
+  protected:
+    bool isOutOfDate() {
+      return drawnLayerCount != currentStatus.layerCount
+          || drawnActiveLayer != currentStatus.activeLayer
+          || drawnLayerArmed != currentStatus.layerArmed
+          || drawnLayerMutes != currentStatus.layerMutes;
+    }
+    void redraw() {
+      drawnLayerCount = currentStatus.layerCount;
+      drawnActiveLayer = currentStatus.activeLayer;
+      drawnLayerArmed = currentStatus.layerArmed;
+      drawnLayerMutes = currentStatus.layerMutes;
+
+      auto c = foreColor();
+      auto p = x;
+
+      for (uint8_t i = 0; i < drawnLayerCount; ++i) {
+        if (i >= drawnLayerMutes.size()) {
+          display.writePixel(p    , y + 3, c);
+          display.writePixel(p + 2, y + 3, c);
+          display.writePixel(p + 4, y + 3, c);
+          break;
+        }
+        if (i == drawnActiveLayer && drawnLayerArmed)
+                                      display.drawRect(p, y, 4, 4, c);
+        else if (drawnLayerMutes[i])  display.drawFastHLine(p, y + 3, 4, c);
+        else                          display.fillRect(p, y, 4, 4, c);
+
+        p += 5 + (i % 3 == 2 ? 2 : 0);
+      }
+    }
+
+  private:
+    uint8_t drawnLayerCount;
+    uint8_t drawnActiveLayer;
+    bool drawnLayerArmed;
+    std::array<bool, 9> drawnLayerMutes;
+  };
+
+
 
   auto loopField = LoopField(0, 0, 128, 13);
   auto lengthField = LengthField(92, 15, 28, 8);
+  auto layerField = LayerField(20, 15, 80, 5);
 
   //auto mainPage = Layout({&loopField}, 0);
 
@@ -140,6 +186,7 @@ namespace {
 
     drew |= loopField.render(force);
     drew |= lengthField.render(force);
+    drew |= layerField.render(force);
 
     if (drew)
       display.display();

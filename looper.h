@@ -36,11 +36,13 @@ public:
   struct Status {
     AbsTime     length;
     AbsTime     position;
+    uint8_t     layerCount;
     uint8_t     activeLayer;
     bool        looping;
     bool        armed;
     bool        layerArmed;
-  };
+    std::array<bool, 9> layerMutes;
+ };
 
   Status status() const;
 
@@ -53,6 +55,7 @@ private:
 
   bool      armed;
 
+  uint8_t layerCount;
   uint8_t activeLayer;
   bool layerArmed;
   std::array<bool, 9> layerMutes;

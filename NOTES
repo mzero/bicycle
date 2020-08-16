@@ -7,6 +7,8 @@ Bicycle
 [] display length in seconds
 [] fix display when clear (it shouldn't have end bar)
 [] display cells in use (?)
+[] displaying too often
+	[] what is the timing of the display operation?
 
 [] something is still messed up about lenghts
 	- play rapid short chords - some notes are held toooooo long

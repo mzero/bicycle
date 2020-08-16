@@ -1,5 +1,6 @@
 #include "looper.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cstring>
 
@@ -53,7 +54,7 @@ public:
 Loop::Loop(EventFunc func)
   : player(func),
     walltime(0),
-    armed(true), activeLayer(0), layerArmed(false),
+    armed(true), layerCount(1), activeLayer(0), layerArmed(false),
     firstCell(nullptr), recentCell(nullptr),
     timeSinceRecent(0), length(0), position(0),
     pendingOff(nullptr)
@@ -166,7 +167,10 @@ void Loop::addEvent(const MidiEvent& ev) {
     clear();
     armed = false;
   }
-  layerArmed = false;
+  if (layerArmed) {
+    layerArmed = false;
+  }
+
   if (activeLayer < layerMutes.size())
     layerMutes[activeLayer] = false;
     // TODO: Should we be doing this? how to communicate back to controller?
@@ -218,6 +222,7 @@ void Loop::keep() {
 
   activeLayer += activeLayer < (layerMutes.size() - 1) ? 1 : 0;
   layerArmed = true;
+  layerCount = std::max<uint8_t>(layerCount, activeLayer + 1);
 
   // advance into the start of the loop
   advance(walltime);
@@ -246,8 +251,9 @@ void Loop::clear() {
   length = 0;
   position = 0;
   armed = true;
+  layerCount = 1;
   activeLayer = 0;
-  layerArmed = false;
+  layerArmed = true;
   for (auto& m : layerMutes) m = false;
     // TODO: Should we be doing this? how to communicate back to controller?
 }
@@ -265,16 +271,20 @@ void Loop::layerArm(uint8_t layer) {
   // FIXME: what to do if still recording initial layer?
   activeLayer = layer;
   layerArmed = true;
+
+  layerCount = std::max<uint8_t>(layerCount, activeLayer + 1);
 }
 
 Loop::Status Loop::status() const {
   Status s;
   s.length = length;
   s.position = position;
+  s.layerCount = layerCount;
   s.activeLayer = activeLayer;
   s.looping = !firstCell;
   s.armed = armed;
   s.layerArmed = layerArmed;
+  s.layerMutes = layerMutes;
   return s;
 }
 
