@@ -2,12 +2,18 @@
 Bicycle
 =======
 
-[] display info
-	- length of loop
-	- cells in use / free
-	- state: arm'd / rec'g / over'g
-	[x] place in loop
-	- when clear and armed, image is wrong
+[] display mode
+[] display layers, un muted in inversion
+[] display length in seconds
+[] fix display when clear (it shouldn't have end bar)
+[] display cells in use (?)
+
+[] something is still messed up about lenghts
+	- play rapid short chords - some notes are held toooooo long
+
+
+Next
+----
 
 [] layer range controls
 
@@ -15,7 +21,7 @@ Bicycle
 	[] when armed, layers overwrite, but when you hit keep, it moves
 		to next layer, and may leave remnants if you don't play a whole
 		repeat
-		- either a command to clear the layer
+		- either a command to clear the layer  +1
 		- or clear the layer on arm
 		- or accept the punch-in/punch-out behavior as correct
 		- or have keep stay on same layer?
@@ -27,6 +33,7 @@ Bicycle
 		- esp. when same pitch as note at start of loop
 	- when starting a new note on pitch X should cancel the pending
 		note off for pitch X, yes?
+		- also cancel or end any awaiting offs?
 
 [] auto record a note at start
 	- serves as start of loop

@@ -6,10 +6,6 @@
 namespace {
 
   Loop::Status currentStatus;
-    // this is a total, ugly hack!
-    // the fields should have access to the Loop object and request
-    // the values they need.....
-
 
   class LoopField : public Field {
   public:
@@ -63,7 +59,54 @@ namespace {
   };
 
 
+  template< typename T >
+  class TextField : public Field {
+  public:
+    typedef T value_t;
+
+    TextField(int16_t x, int16_t y, uint16_t w, uint16_t h)
+      : Field(x, y, w, h)
+      {}
+
+  protected:
+    bool isOutOfDate() { return drawnValue != getValue(); }
+
+    void redraw() {
+      drawnValue = getValue();
+
+      resetText();
+      smallText();
+      display.setCursor(x, y);
+      drawValue(drawnValue);
+    }
+
+    virtual void drawValue(const value_t& v) const {
+      display.print(v);
+    }
+
+    virtual value_t getValue() const = 0;
+
+  private:
+    value_t drawnValue;
+  };
+
+  class LengthField : public TextField<AbsTime> {
+  public:
+    LengthField(int16_t x, int16_t y, uint16_t w, uint16_t h)
+      : TextField<AbsTime>(x, y, w, h) { }
+  protected:
+    void drawValue(const AbsTime& t) const {
+      auto tenths = (t + 50) / 100;
+      display.printf("%4d.%1d", tenths / 10, tenths % 10);
+    }
+    AbsTime getValue() const { return currentStatus.length; }
+  };
+
+
+
   auto loopField = LoopField(0, 0, 128, 13);
+  auto lengthField = LengthField(92, 15, 28, 8);
+
   //auto mainPage = Layout({&loopField}, 0);
 
   // class MainPage : public Layout {
@@ -96,6 +139,7 @@ namespace {
     }
 
     drew |= loopField.render(force);
+    drew |= lengthField.render(force);
 
     if (drew)
       display.display();
