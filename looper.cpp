@@ -157,6 +157,7 @@ void Loop::advance(AbsTime now) {
 void Loop::addEvent(const MidiEvent& ev) {
   if (ev.isNoteOff()) {
     // note off processing
+    player(ev);
     Util::finishAwaitingOff(*this, ev);
     return;
   }

@@ -6,7 +6,8 @@ Bicycle
 	- length of loop
 	- cells in use / free
 	- state: arm'd / rec'g / over'g
-	- place in loop
+	[x] place in loop
+	- when clear and armed, image is wrong
 
 [] layer range controls
 
@@ -19,6 +20,13 @@ Bicycle
 		- or accept the punch-in/punch-out behavior as correct
 		- or have keep stay on same layer?
 	[] a way to over-dub into a layer, not punch?
+
+[] long notes
+	- note held all through the loop
+	- note held near end of loop, through to start
+		- esp. when same pitch as note at start of loop
+	- when starting a new note on pitch X should cancel the pending
+		note off for pitch X, yes?
 
 [] auto record a note at start
 	- serves as start of loop
