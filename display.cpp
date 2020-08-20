@@ -148,10 +148,23 @@ namespace {
   };
 
 
+  class ArmedField : public TextField<bool> {
+  public:
+    ArmedField(int16_t x, int16_t y, uint16_t w, uint16_t h)
+      : TextField<bool>(x, y, w, h) { }
+  protected:
+    void drawValue(const bool& armed) const {
+      if (armed)
+        display.print("\xe0");
+    }
+    bool getValue() const { return currentStatus.armed; }
+  };
+
 
   auto loopField = LoopField(0, 0, 128, 13);
   auto lengthField = LengthField(92, 15, 28, 8);
   auto layerField = LayerField(20, 15, 80, 5);
+  auto armedField = ArmedField(0, 15, 10, 20);
 
   //auto mainPage = Layout({&loopField}, 0);
 
@@ -187,6 +200,7 @@ namespace {
     drew |= loopField.render(force);
     drew |= lengthField.render(force);
     drew |= layerField.render(force);
+    drew |= armedField.render(force);
 
     if (drew)
       display.display();
