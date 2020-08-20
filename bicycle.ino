@@ -160,7 +160,7 @@ void setup() {
   displaySetup();
 
   Serial.begin(115200);
-  while (!Serial);
+  // while (!Serial);
 
   pinMode(pinSequence, OUTPUT);
   pinMode(pinMeasure, OUTPUT);
