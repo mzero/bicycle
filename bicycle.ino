@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <Adafruit_TinyUSB.h>
 
+#include "analog.h"
 #include "display.h"
 #include "looper.h"
 #include "types.h"
@@ -8,6 +9,7 @@
 
 // USB MIDI object
 Adafruit_USBD_MIDI usb_midi;
+
 
 /*
                             boppad assignments
@@ -162,6 +164,8 @@ void setup() {
   Serial.begin(115200);
   // while (!Serial);
 
+  analogBegin();
+
   pinMode(pinSequence, OUTPUT);
   pinMode(pinMeasure, OUTPUT);
   pinMode(pinBeat, OUTPUT);
@@ -183,6 +187,8 @@ void loop() {
   static uint32_t then = millis();
   uint32_t now = millis();
 
+  analogUpdate(now);
+
   if (now > then) {
     theLoop.advance(now);
     then = now;
@@ -194,7 +200,12 @@ void loop() {
   }
 
   Loop::Status s = theLoop.status();
-  displayUpdate(now, false, s);
+  displayUpdate(now, s);
 }
+
+
+void buttonActionA() { toggleTestWave(); }
+void buttonActionB() { toggleTestOutput(); }
+
 
 
