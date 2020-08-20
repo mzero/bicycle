@@ -224,21 +224,66 @@ void displaySetup() {
 
 }
 
-void displayUpdate(unsigned long now, bool activity, const Loop::Status& s) {
+
+namespace {
+  Encoder encoder(12, 11);
+  Button encoderButton(10);
+
+  Button oledButtonA(9);
+  Button oledButtonB(6);
+  Button oledButtonC(5);
+
+}
+
+extern "C" {
+  void buttonActionNOP() { }
+};
+void buttonActionA() __attribute__ ((weak, alias("buttonActionNOP")));
+void buttonActionB() __attribute__ ((weak, alias("buttonActionNOP")));
+void buttonActionC() __attribute__ ((weak, alias("buttonActionNOP")));
+
+
+void displayUpdate(unsigned long now, const Loop::Status& s) {
+
+  bool active = false;
+
+  auto update = encoder.update();
+  if (update.active()) {
+    // updateSelection(update);
+    active = true;
+  }
+  Button::State b = encoderButton.update();
+  if (b != Button::NoChange) {
+    // clickSelection(s);
+    active = true;
+  }
+  if (oledButtonA.update() == Button::Down) {
+    buttonActionA();
+    active = true;
+  }
+  if (oledButtonB.update() == Button::Down) {
+    buttonActionB();
+    active = true;
+  }
+  if (oledButtonC.update() == Button::Down) {
+    buttonActionC();
+    active = true;
+  }
+
 
   static unsigned long nextDraw = 0;
   static bool saverDrawn = false;
 
-  if (activity) {
+  if (active) {
     display.dim(false);
     dimTimeout.activity();
   }
 
   bool drew = false;
-  if (activity || now > nextDraw) {
+  if (active || now > nextDraw) {
     currentStatus = s;
 
-    drew = drawAll(true);
+    drew = drawAll(false);
     nextDraw = now + 50;  // redraw 20x a second
 
     if (drew && saverDrawn)
