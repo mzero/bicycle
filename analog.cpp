@@ -16,24 +16,27 @@ namespace {
   const std::array<uint32_t, 4> trigPins =
     { PIN_SPI_MISO, PIN_SPI_SCK, PIN_SERIAL1_TX, PIN_SPI_MOSI };
 
+}
 
-  inline void cvOut(int id, float v) {
-    // input is assumed in [-1.0..1.0]
+void cvOut(int id, float v) {
+  // input is assumed in [-1.0..1.0]
 
-    constexpr float scale =  0.90;
-    constexpr float offset = 0.02;
-      // SAMD51 DAC outputs don't really go full scale, and snf asymmetrically.
-      // This scales the outputs to a reaonsable range, determined by scope.
-      // The same adjustment is used for the PWM outputs just to keep things
-      // simple.
+  constexpr float scale =  0.90;
+  constexpr float offset = 0.02;
+    // SAMD51 DAC outputs don't really go full scale, and snf asymmetrically.
+    // This scales the outputs to a reaonsable range, determined by scope.
+    // The same adjustment is used for the PWM outputs just to keep things
+    // simple.
 
-    uint16_t s = round((v * scale * -1 + offset + 1.0) * 32768);
-    analogWrite(cvPins[id], s);
-  }
+  uint16_t s = round((v * scale * -1 + offset + 1.0) * 32768);
+  analogWrite(cvPins[id], s);
+}
 
-  inline void trigOut(int id, bool v) {
-    digitalWrite(trigPins[id], v ? LOW : HIGH);
-  }
+void trigOut(int id, bool v) {
+  digitalWrite(trigPins[id], v ? LOW : HIGH);
+}
+
+namespace {
 
   enum TestWave {
     testBegin,
@@ -160,6 +163,13 @@ void analogBegin() {
 
   for (auto& pin : cvPins)
     analogWrite(pin, 0);
+  for (auto& pin : trigPins)
+    pinMode(pin, OUTPUT);
+
+  for (int i = 0; i < cvPins.size(); ++i)
+    cvOut(i, 0.0f);
+  for (int i = 0; i < trigPins.size(); ++i)
+    trigOut(i, false);
 
   //   if (pin == PIN_DAC0 || pin == PIN_DAC1) {
   //     // DACs
@@ -176,10 +186,6 @@ void analogBegin() {
 
   setupWaveformTimer();
 
-  for (int i = 0; i < cvPins.size(); ++i)
-    cvOut(i, 0.0);
-  for (int i = 0; i < trigPins.size(); ++i)
-    trigOut(i, false);
 }
 
 void analogUpdate(unsigned long now) {
