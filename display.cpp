@@ -217,6 +217,9 @@ namespace {
 
 void displaySetup() {
   initializeDisplay();
+  display.setRotation(0);
+  display.clearDisplay();
+  display.display();
 
 
   // updateSaver(true);
