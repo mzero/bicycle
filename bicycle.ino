@@ -21,35 +21,52 @@ Adafruit_USBD_MIDI usb_midi;
   ch 1 cc 70 & 71 are radius on boppad lower two pads
 */
 
-enum Pin : uint32_t {
-  pinSequence = PIN_SPI_MOSI,
-  pinMeasure = PIN_SERIAL1_TX,
-  pinBeat = PIN_SPI_SCK,
-  pinTuplet = PIN_SPI_MISO,
+
+enum Boppad {
+  noteLowerLeft = 36,
+  noteLowerRight = 38,
+  noteUpperRight = 42,
+  noteUpperLeft = 48,
+
+  ccRadiusLowerLeft = 70,
+  ccRadiusLowerRight = 71,
 };
 
-enum PinNote : uint8_t {
-  pinNoteSequence = 50,
-  pinNoteMeasure = 51,
-  pinNoteBeat = 38,
-  pinNoteTuplet = 36,
-};
+void playTrigger(uint8_t note, bool on, uint8_t vel) {
+  int t;
 
-void playTrigger(uint8_t note, uint32_t level) {
   switch (note) {
-    case pinNoteSequence:   digitalWrite(pinSequence, level);   break;
-    case pinNoteMeasure:    digitalWrite(pinMeasure,  level);   break;
-    case pinNoteBeat:       digitalWrite(pinBeat,     level);   break;
-    case pinNoteTuplet:     digitalWrite(pinTuplet,   level);   break;
-    default: ;
+    case noteLowerLeft:   t = 0;  break;
+    case noteLowerRight:  t = 1;  break;
+    default:
+      return;
   }
+
+  if (on) {
+    cvOut(t, vel / (127.0f / 2) - 1);
+  }
+  trigOut(t, on);
+}
+
+void playCv(uint8_t cc, uint8_t val) {
+  int t;
+
+  switch (cc) {
+    case ccRadiusLowerLeft:   t = 2;  break;
+    case ccRadiusLowerRight:  t = 3;  break;
+    default:
+      return;
+  }
+
+  cvOut(t, val / (127.0f / 2) - 1);
 }
 
 void playEvent(const MidiEvent& ev) {
   uint8_t packet[4];
 
-  if (ev.isNoteOff())       playTrigger(ev.data1, HIGH);
-  else if (ev.isNoteOn())   playTrigger(ev.data1, LOW);
+  if (ev.isNoteOff())       playTrigger(ev.data1, false, ev.data2);
+  else if (ev.isNoteOn())   playTrigger(ev.data1, true,  ev.data2);
+  else if (ev.isCC())       playCv(ev.data1, ev.data2);
 
 
   packet[0] = 0 | (ev.status >> 4);
@@ -113,8 +130,19 @@ void controlEvent(const MidiEvent& ev) {
 }
 
 void noteEvent(const MidiEvent& ev) {
-  if ((ev.status & 0x0f) == 0x0f) {
+  auto ch = ev.status & 0x0f;
+  if (ch == 0x0f) {
     controlEvent(ev);
+    return;
+  }
+
+  if (ch == 0x01) {
+    if ((ev.status & 0xf0) == 0x90) {
+      switch (ev.data1) {
+        case noteUpperLeft:   theLoop.keep(); break;
+        case noteUpperRight:  theLoop.arm();  break;
+      }
+    }
     return;
   }
 
@@ -165,15 +193,6 @@ void setup() {
   // while (!Serial);
 
   analogBegin();
-
-  pinMode(pinSequence, OUTPUT);
-  pinMode(pinMeasure, OUTPUT);
-  pinMode(pinBeat, OUTPUT);
-  pinMode(pinTuplet, OUTPUT);
-  digitalWrite(pinSequence, HIGH);
-  digitalWrite(pinMeasure, HIGH);
-  digitalWrite(pinBeat, HIGH);
-  digitalWrite(pinTuplet, HIGH);
 
   theLoop.begin();
 

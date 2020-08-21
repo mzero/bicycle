@@ -3,8 +3,8 @@ Bicycle
 =======
 
 [x] tests simply play four sines on the four outputs
-[] map velocity & radius for drum hits to analog outs.
-[] map drum hits to triggers
+[x] map velocity & radius for drum hits to analog outs.
+[x] map drum hits to triggers
 
 [] fix display when clear (it shouldn't have end bar)
 [] display cells in use (?)
