@@ -19,6 +19,9 @@ struct MidiEvent {
   bool isNoteOff() const
     { return (status & 0xf0) == 0x80 || ((status & 0xf0) == 0x90 && data2 == 0); }
 
+  bool isCC() const
+    { return (status & 0xf0) == 0xb0; }
+
 };
 
 
