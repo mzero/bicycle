@@ -2,9 +2,10 @@
 Bicycle
 =======
 
-[] display mode
-[] display layers, un muted in inversion
-[] display length in seconds
+[x] tests simply play four sines on the four outputs
+[] map velocity & radius for drum hits to analog outs.
+[] map drum hits to triggers
+
 [] fix display when clear (it shouldn't have end bar)
 [] display cells in use (?)
 [] displaying too often

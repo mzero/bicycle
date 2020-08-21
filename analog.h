@@ -5,6 +5,5 @@ void analogBegin();
 void analogUpdate(unsigned long);
 
 void toggleTestWave();
-void toggleTestOutput();
 
 #endif // _INCLUDE_ANALOG_H_

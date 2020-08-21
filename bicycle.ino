@@ -187,8 +187,6 @@ void loop() {
   static uint32_t then = millis();
   uint32_t now = millis();
 
-  analogUpdate(now);
-
   if (now > then) {
     theLoop.advance(now);
     then = now;
@@ -199,13 +197,14 @@ void loop() {
     notePacket(packet);
   }
 
+  // analogUpdate(now);
+
   Loop::Status s = theLoop.status();
   displayUpdate(now, s);
 }
 
 
 void buttonActionA() { toggleTestWave(); }
-void buttonActionB() { toggleTestOutput(); }
 
 
 
