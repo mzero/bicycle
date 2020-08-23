@@ -197,7 +197,13 @@ void setup() {
   theLoop.begin();
 
   usb_midi.begin();
-  while (!USBDevice.mounted()) delay(1);
+  //while (!USBDevice.mounted()) delay(1);
+
+  // force USB reconnect so MIDI port will be re-found
+  USBDevice.detach();
+  delay(3000);
+  USBDevice.attach();
+
 
   Serial.println("Ready!");
 }
