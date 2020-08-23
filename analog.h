@@ -4,6 +4,9 @@
 void analogBegin();
 void analogUpdate(unsigned long);
 
+const int numberOfCvOuts = 4;
+const int numberOfTrigOuts = 4;
+
 void cvOut(int, float);
   // outputs are A0, A1, A4, A5
 
