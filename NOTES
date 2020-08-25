@@ -7,9 +7,14 @@ Bicycle
 	[-] code config
 [x] kontrol test knobs
 	[x] 1 ~ 4 map to outputs 1 ~ 4, but don't record
-[] kontrol 7, 8, 9th - to delay
-	[] send on different channel
-[] 0-volume is same as mute
+[x] kontrol 7, 8, 9th - to delay
+	[x] send on different channel - can't only has one channel per scene
+	[x] set those controls high:
+		knobs: 64 ~ 66
+		sliders: 67 ~ 69
+		top bottons: 70 ~ 72
+		bottom bottons: 73~ 75
+[x] 0-volume is same as mute
 [] 2nd arm is total clear
 	[] both per track and whole
 	[] must be within 1 second

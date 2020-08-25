@@ -16,7 +16,7 @@ namespace {
   inline uint8_t scaleVelocity(uint8_t vel, uint8_t vol) {
     return static_cast<uint8_t>(clamp(
       static_cast<uint32_t>(vel) * static_cast<uint32_t>(vol) / 100,
-      1ul, 127ul));
+      0ul, 127ul));
   }
 }
 
@@ -136,14 +136,16 @@ void Loop::advance(AbsTime now) {
           MidiEvent note = recentCell->event;
           if (layer < layerVolumes.size())
             note.data2 = scaleVelocity(note.data2, layerVolumes[layer]);
-          player(note);
+          if (note.data2 > 0) {
+            player(note);
 
-          Cell* offCell = Cell::alloc();
-          offCell->event = note;
-          offCell->event.data2 = 0; // volume 0 makes it a NoteOff
-          offCell->duration = recentCell->duration;
-          offCell->link(pendingOff);
-          pendingOff = offCell;
+            Cell* offCell = Cell::alloc();
+            offCell->event = note;
+            offCell->event.data2 = 0; // volume 0 makes it a NoteOff
+            offCell->duration = recentCell->duration;
+            offCell->link(pendingOff);
+            pendingOff = offCell;
+          }
         } else {
           player(recentCell->event);
         }
