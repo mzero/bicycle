@@ -48,6 +48,35 @@ public:
     for (auto& ao : loop.awaitingOff)
       ao = {nullptr, 0};
   }
+
+
+  static void playCell(Loop& loop, const Cell& cell) {
+    auto layer = cell.layer;
+    if (layer < loop.layerMutes.size() && loop.layerMutes[layer])
+      return;
+
+    if (cell.event.isNoteOn() && cell.duration > 0) {
+      MidiEvent note = cell.event;
+      if (layer < loop.layerVolumes.size())
+        note.data2 = scaleVelocity(note.data2, loop.layerVolumes[layer]);
+      if (note.data2 == 0)
+        return;
+
+      Cell* offCell = Cell::alloc();
+      if (!offCell)
+        return;   // don't play NoteOn if can't allocate NoteOff
+
+      loop.player(note);
+
+      offCell->event = note;
+      offCell->event.data2 = 0; // volume 0 makes it a NoteOff
+      offCell->duration = cell.duration;
+      offCell->link(loop.pendingOff);
+      loop.pendingOff = offCell;
+    } else {
+      loop.player(cell.event);
+    }
+  }
 };
 
 
@@ -127,29 +156,8 @@ void Loop::advance(AbsTime now) {
     } else {
       dt -= recentCell->nextTime - timeSinceRecent;
       timeSinceRecent = 0;
-
       recentCell = nextCell;
-
-      if (!(layer < layerMutes.size() && layerMutes[layer])) {
-
-        if (recentCell->event.isNoteOn() && recentCell->duration > 0) {
-          MidiEvent note = recentCell->event;
-          if (layer < layerVolumes.size())
-            note.data2 = scaleVelocity(note.data2, layerVolumes[layer]);
-          if (note.data2 > 0) {
-            player(note);
-
-            Cell* offCell = Cell::alloc();
-            offCell->event = note;
-            offCell->event.data2 = 0; // volume 0 makes it a NoteOff
-            offCell->duration = recentCell->duration;
-            offCell->link(pendingOff);
-            pendingOff = offCell;
-          }
-        } else {
-          player(recentCell->event);
-        }
-      }
+      Util::playCell(*this, *recentCell);
     }
   }
 
@@ -194,6 +202,21 @@ void Loop::addEvent(const MidiEvent& ev) {
 
   if (ev.isNoteOn())
     Util::startAwaitingOff(*this, newCell);
+
+  if (!recentCell) {
+    // first time through, add the "start" note
+    Cell* startCell = Cell::alloc();
+    if (startCell) {
+      startCell->event = { 0x90, 48, 100 };
+        // FIXME: should be defined somewhere
+      startCell->layer = 0xff; // a magic layer!
+      startCell->duration = 3;
+
+      recentCell = startCell;
+      firstCell = recentCell;
+      Util::playCell(*this, *recentCell);
+    }
+  }
 
   if (recentCell) {
     Cell* nextCell = recentCell->next();

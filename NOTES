@@ -2,9 +2,9 @@
 Bicycle
 =======
 
-[-] third channel
+[x] third channel
 	[x] boppad config
-	[-] code config
+	[x] code config
 [x] kontrol test knobs
 	[x] 1 ~ 4 map to outputs 1 ~ 4, but don't record
 [x] kontrol 7, 8, 9th - to delay
@@ -20,9 +20,9 @@ Bicycle
 [x] check wiring of filters for 3 & 4
 	- are they inverted? They are!
 	[x] swap them in code
-[] start pulse
-	[] record a note on arm
-	[] map to something that triggers 4th trigger
+[x] start pulse
+	[x] record a note on arm
+	[x] map to something that triggers 4th trigger
 
 
 
@@ -39,6 +39,8 @@ Bicycle
 	- play rapid short chords - some notes are held toooooo long
 
 [] 2nd arm is total clear ??
+[] fix hack of start note definition
+	[] ? should be START command? what about duration of trigger?
 
 
 

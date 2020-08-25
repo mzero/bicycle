@@ -43,6 +43,7 @@ void playTrigger(uint8_t note, bool on, uint8_t vel) {
     case noteLowerLeft:   t = 0;  break;
     case noteLowerRight:  t = 1;  break;
     case noteUpperRight:  t = 2;  break;
+    case noteUpperLeft:   t = 3;  break;  // the start loop note
     default:
       return;
   }
