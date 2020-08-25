@@ -15,9 +15,8 @@ Bicycle
 		top bottons: 70 ~ 72
 		bottom bottons: 73~ 75
 [x] 0-volume is same as mute
-[] 2nd arm is total clear
-	[] both per track and whole
-	[] must be within 1 second
+[x] 2nd track arm is start - so you can start erasing
+	[x] must be within 1 second
 [] check wiring of filters for 3 & 4
 	- are they inverted?
 [] start pulse
@@ -37,6 +36,9 @@ Bicycle
 
 [] something is still messed up about lenghts
 	- play rapid short chords - some notes are held toooooo long
+
+[] 2nd arm is total clear ??
+
 
 
 Next

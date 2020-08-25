@@ -270,9 +270,16 @@ void Loop::layerVolume(uint8_t layer, uint8_t volume) {
 }
 
 void Loop::layerArm(uint8_t layer) {
+  if (layerArmed && activeLayer == layer && walltime < (armedTime + 1000)) {
+    // if a duouble press of the layer arm control, start recording
+    layerArmed = false;
+    return;
+  }
+
   // FIXME: what to do if still recording initial layer?
   activeLayer = layer;
   layerArmed = true;
+  armedTime = walltime;
 
   layerCount = std::max<uint8_t>(layerCount, activeLayer + 1);
 }

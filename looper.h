@@ -58,6 +58,8 @@ private:
   uint8_t layerCount;
   uint8_t activeLayer;
   bool layerArmed;
+  AbsTime armedTime;
+
   std::array<bool, 9> layerMutes;
   std::array<uint8_t, 9> layerVolumes;
 
