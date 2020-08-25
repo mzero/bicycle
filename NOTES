@@ -2,9 +2,28 @@
 Bicycle
 =======
 
-[x] tests simply play four sines on the four outputs
-[x] map velocity & radius for drum hits to analog outs.
-[x] map drum hits to triggers
+[] third channel
+	[x] boppad config
+	[-] code config
+[] kontrol test knobs
+	[] 1 ~ 4 map to outputs 1 ~ 4, but don't record
+[] kontrol 7, 8, 9th - to delay
+	[] send on different channel
+[] 0-volume is same as mute
+[] 2nd arm is total clear
+	[] both per track and whole
+	[] must be within 1 second
+[] check wiring of filters for 3 & 4
+	- are they inverted?
+[] start pulse
+	[] record a note on arm
+	[] map to something that triggers 4th trigger
+
+
+
+
+
+
 
 [] fix display when clear (it shouldn't have end bar)
 [] display cells in use (?)

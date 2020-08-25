@@ -38,11 +38,12 @@ void playTrigger(uint8_t note, bool on, uint8_t vel) {
   switch (note) {
     case noteLowerLeft:   t = 0;  break;
     case noteLowerRight:  t = 1;  break;
+    case noteUpperRight:  t = 2;  break;
     default:
       return;
   }
 
-  if (on) {
+  if (on && (t == 1 || t == 2)) {    // only trigs 1 & 2 have c.v. out
     cvOut(t, vel / (127.0f / 2) - 1);
   }
   trigOut(t, on);
@@ -52,7 +53,7 @@ void playCv(uint8_t cc, uint8_t val) {
   int t;
 
   switch (cc) {
-    case ccRadiusLowerLeft:   t = 2;  break;
+    case ccRadiusLowerLeft:   t = 0;  break;
     case ccRadiusLowerRight:  t = 3;  break;
     default:
       return;
