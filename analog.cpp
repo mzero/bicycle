@@ -113,12 +113,18 @@ namespace {
     sync(TCC0, TCC_SYNCBUSY_ENABLE);
 
     // use the core to set up the i/o multiplexer
-    pinPeripheral(A3, PIO_TIMER);
-    pinPeripheral(A4, PIO_TIMER);
-    pinPeripheral(10, PIO_TIMER_ALT);
-    pinPeripheral(12, PIO_TIMER_ALT);
+    pinPeripheral(A3, PIO_TIMER);       // WO[0], CC0
+    pinPeripheral(A4, PIO_TIMER);       // WO[1], CC1
+    pinPeripheral(10, PIO_TIMER_ALT);   // WO[2], CC2
+    pinPeripheral(12, PIO_TIMER_ALT);   // WO[3], CC3
   }
+
+
+  const std::array<int, numberOfCvOuts> cvChannels =
+    { 0, 1, 3, 2 };
+    // the last two were accidentially wired swapped to the outputs
 }
+
 
 void cvOut(int id, float v) {
   // input is assumed in [-1.0..1.0]
@@ -131,7 +137,7 @@ void cvOut(int id, float v) {
     // simple.
 
   uint32_t s = lround((v * scale + offset + 1.0f) * (pwmTimerPeriod / 2.0f));
-  TCC0->CCB[id].reg = s;
+  TCC0->CCB[cvChannels[id]].reg = s;
 }
 
 

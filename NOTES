@@ -17,8 +17,9 @@ Bicycle
 [x] 0-volume is same as mute
 [x] 2nd track arm is start - so you can start erasing
 	[x] must be within 1 second
-[] check wiring of filters for 3 & 4
-	- are they inverted?
+[x] check wiring of filters for 3 & 4
+	- are they inverted? They are!
+	[x] swap them in code
 [] start pulse
 	[] record a note on arm
 	[] map to something that triggers 4th trigger
