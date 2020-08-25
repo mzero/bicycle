@@ -2,11 +2,11 @@
 Bicycle
 =======
 
-[] third channel
+[-] third channel
 	[x] boppad config
 	[-] code config
-[] kontrol test knobs
-	[] 1 ~ 4 map to outputs 1 ~ 4, but don't record
+[x] kontrol test knobs
+	[x] 1 ~ 4 map to outputs 1 ~ 4, but don't record
 [] kontrol 7, 8, 9th - to delay
 	[] send on different channel
 [] 0-volume is same as mute

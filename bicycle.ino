@@ -32,6 +32,10 @@ enum Boppad {
   ccRadiusLowerRight = 71,
 };
 
+inline float mapMidiToCV(uint8_t val) {
+  return val / (127.0f / 2) - 1;
+}
+
 void playTrigger(uint8_t note, bool on, uint8_t vel) {
   int t;
 
@@ -44,7 +48,7 @@ void playTrigger(uint8_t note, bool on, uint8_t vel) {
   }
 
   if (on && (t == 1 || t == 2)) {    // only trigs 1 & 2 have c.v. out
-    cvOut(t, vel / (127.0f / 2) - 1);
+    cvOut(t, mapMidiToCV(vel));
   }
   trigOut(t, on);
 }
@@ -59,7 +63,7 @@ void playCv(uint8_t cc, uint8_t val) {
       return;
   }
 
-  cvOut(t, val / (127.0f / 2) - 1);
+  cvOut(t, mapMidiToCV(val));
 }
 
 void playEvent(const MidiEvent& ev) {
@@ -100,6 +104,12 @@ void controlEvent(const MidiEvent& ev) {
         case  11: theLoop.layerVolume(7, ev.data2); break;
         case  12: theLoop.layerVolume(8, ev.data2); break;
           // yes, CCs 7, 10, & 11 are skipped
+
+        // knobs for testing the CV output
+        case  14: cvOut(0, mapMidiToCV(ev.data2)); break;
+        case  15: cvOut(1, mapMidiToCV(ev.data2)); break;
+        case  16: cvOut(2, mapMidiToCV(ev.data2)); break;
+        case  17: cvOut(3, mapMidiToCV(ev.data2)); break;
 
         case  23: theLoop.layerMute(0, ev.data2 != 0); break;
         case  24: theLoop.layerMute(1, ev.data2 != 0); break;
