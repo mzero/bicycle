@@ -2,32 +2,6 @@
 Bicycle
 =======
 
-[x] third channel
-	[x] boppad config
-	[x] code config
-[x] kontrol test knobs
-	[x] 1 ~ 4 map to outputs 1 ~ 4, but don't record
-[x] kontrol 7, 8, 9th - to delay
-	[x] send on different channel - can't only has one channel per scene
-	[x] set those controls high:
-		knobs: 64 ~ 66
-		sliders: 67 ~ 69
-		top bottons: 70 ~ 72
-		bottom bottons: 73~ 75
-[x] 0-volume is same as mute
-[x] 2nd track arm is start - so you can start erasing
-	[x] must be within 1 second
-[x] check wiring of filters for 3 & 4
-	- are they inverted? They are!
-	[x] swap them in code
-[x] start pulse
-	[x] record a note on arm
-	[x] map to something that triggers 4th trigger
-
-
-
-
-
 
 
 [] fix display when clear (it shouldn't have end bar)
@@ -67,19 +41,11 @@ Next
 		note off for pitch X, yes?
 		- also cancel or end any awaiting offs?
 
-[] auto record a note at start
-	- serves as start of loop
-	- map to one of the trigger outs
-
 [] clean up delta times and checking for overflows
 	- durations on note off
 	- advance big jump
 	- others?
 
-[] use Pi to route midi:
-	boppad -> pi -> buddy
-	blueboard -> pi -> buddy
-	buddy -> pi -> pisound din midi -> pulsar
 
 
 laters
@@ -101,24 +67,55 @@ laters
 [] different length layers? (would be like multiple loops, sync'd to
 	ration of lengths)
 
-
-
-
-
-
-
-
-Later
------
 [] async the loops if desired
 
+[] tracking playing speed
+[] output MIDI clock and/or clock pulse on an output
 
-
-Hardware
---------
-[] basic schematic
-[] breadboard of device
 
 
 
 Notes
+=====
+
+
+
+HW Notes
+========
+
+USB Host
+--------
+Arudino Host Shield: (Retired)
+	https://store.arduino.cc/usa/arduino-usb-host-shield
+	open HW: https://www.arduino.cc/en/uploads/Main/USBHostShield-Rev2.pdf
+	uses MAX3421E chip:
+		USB host + 8 GPI + 8 GPO; via SPI
+		https://www.maximintegrated.com/en/products/interface/controllers-expanders/MAX3421E.html
+
+SparkFun's USB Shield is similar:
+	https://www.sparkfun.com/products/9947
+	same chip
+
+
+Bitluni's USB host feather thing:
+	https://www.youtube.com/watch?v=po3FBdY0GS4&feature=youtu.be
+	CH559 dual USB host controller chip
+
+Adafruit Trinket M0
+	- has host ability
+	- used in this MIDI USB Host thing
+		https://hackaday.io/project/161715-midi-usb-host-to-midi-din-converter
+		https://github.com/gdsports/midiuartusbh
+
+Another approach - a Pi Zero and a hub
+	- just use a script to aconnect every second
+
+
+https://github.com/gdsports/USB_Host_Library_SAMD
+
+
+
+
+
+
+
