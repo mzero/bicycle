@@ -16,7 +16,7 @@ namespace {
   inline uint8_t scaleVelocity(uint8_t vel, uint8_t vol) {
     return static_cast<uint8_t>(clamp(
       static_cast<uint32_t>(vel) * static_cast<uint32_t>(vol) / 100,
-      0ul, 127ul));
+      0u, 127u));
   }
 }
 
