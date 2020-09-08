@@ -1,0 +1,3 @@
+#ifndef __INCLUDE_LARD_WPROGRAM_H__
+#define __INCLUDE_LARD_WPROGRAM_H__
+#endif // __INCLUDE_LARD_WPROGRAM_H__
