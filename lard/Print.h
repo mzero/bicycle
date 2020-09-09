@@ -21,7 +21,7 @@ class Print {
     
     void printf(const char*, ...);
     
-    virtual size_t write(uint8_t);
+    virtual size_t write(uint8_t) = 0;
 };
 
 

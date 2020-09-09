@@ -50,34 +50,34 @@ endef
 
 
 $(eval $(call build_objects,\
-  rpi,\
-  rpi,\
-  bicycle.cpp))
+	rpi,\
+	rpi,\
+	bicycle.cpp))
 
 $(eval $(call build_objects,\
-  common,\
-  common,\
-  cell.cpp display.cpp looper.cpp))
+	common,\
+	common,\
+	cell.cpp display.cpp looper.cpp))
 
 $(eval $(call build_objects,\
-  ClearUI,\
-  ../ClearUI/src,\
-  ClearUI_Display.cpp ClearUI_Field.cpp ClearUI_Layout.cpp))
+	ClearUI,\
+	../ClearUI/src,\
+	ClearUI_Display.cpp ClearUI_Field.cpp ClearUI_Input.cpp ClearUI_Layout.cpp))
 
 $(eval $(call build_objects,\
-  Adafruit-GFX-Library,\
-  ../ext/Adafruit-GFX-Library,\
-  Adafruit_GFX.cpp))
+	Adafruit-GFX-Library,\
+	../ext/Adafruit-GFX-Library,\
+	Adafruit_GFX.cpp))
 
 $(eval $(call build_objects,\
-  Adafruit_SSD1306,\
-  ../ext/Adafruit_SSD1306,\
-  Adafruit_SSD1306.cpp))
+	Adafruit_SSD1306,\
+	../ext/Adafruit_SSD1306,\
+	Adafruit_SSD1306.cpp))
 
 $(eval $(call build_objects,\
-  lard,\
-  lard,\
-  main.cpp))
+	lard,\
+	lard,\
+	main.cpp mock.cpp))
 
 
 LIBS := stdc++

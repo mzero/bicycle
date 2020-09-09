@@ -33,6 +33,7 @@ constexpr float PI = 3.1415926535;
 class Serial_t : public Print {
   public:
     void begin(int);
+    size_t write(uint8_t);
 };
 extern Serial_t Serial;
 

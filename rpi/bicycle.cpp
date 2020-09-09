@@ -8,8 +8,8 @@
 // USB MIDI object
 class FauxMidi {
   public:
-    bool send(const uint8_t[4]);
-    bool receive(uint8_t [4]);
+    bool send(const uint8_t[4]) { return false; }
+    bool receive(uint8_t [4])   { return false; }
 };
 FauxMidi usb_midi;
 
