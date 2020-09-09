@@ -2,98 +2,89 @@
 TARGET ?= bicycle
 
 BUILD_DIR ?= ./build
-SRCS :=
 OBJS :=
 INCS :=
 
-
-APP_SRC_DIR := rpi
-APP_OBJ_DIR := $(BUILD_DIR)/rpi
-APP_SRC_FILES := bicycle.cpp
-SRCS += $(addprefix $(APP_SRC_DIR)/,$(APP_SRC_FILES))
-OBJS += $(addprefix $(APP_OBJ_DIR)/,$(APP_SRC_FILES:%=%.o))
-INCS += $(APP_SRC_DIR)
-
-COM_SRC_DIR := common
-COM_OBJ_DIR := $(BUILD_DIR)/common
-COM_SRC_FILES := cell.cpp display.cpp looper.cpp
-SRCS += $(addprefix $(COM_SRC_DIR)/,$(COM_SRC_FILES))
-OBJS += $(addprefix $(COM_OBJ_DIR)/,$(COM_SRC_FILES:%=%.o))
-INCS += $(COM_SRC_DIR)
-
-CUI_SRC_DIR := ../ClearUI/src
-CUI_OBJ_DIR := $(BUILD_DIR)/ClearUI
-CUI_SRC_FILES := ClearUI_Display.cpp ClearUI_Field.cpp ClearUI_Layout.cpp
-SRCS += $(addprefix $(CUI_SRC_DIR)/,$(CUI_SRC_FILES))
-OBJS += $(addprefix $(CUI_OBJ_DIR)/,$(CUI_SRC_FILES:%=%.o))
-INCS += $(CUI_SRC_DIR)
-
-GFX_SRC_DIR := ../ext/Adafruit-GFX-Library
-GFX_OBJ_DIR := $(BUILD_DIR)/Adafruit-GFX-Library
-GFX_SRC_FILES := Adafruit_GFX.cpp
-SRCS += $(addprefix $(GFX_SRC_DIR)/,$(GFX_SRC_FILES))
-OBJS += $(addprefix $(GFX_OBJ_DIR)/,$(GFX_SRC_FILES:%=%.o))
-INCS += $(GFX_SRC_DIR)
-
-SSD_SRC_DIR := ../ext/Adafruit_SSD1306
-SSD_OBJ_DIR := $(BUILD_DIR)/Adafruit_SSD1306
-SSD_SRC_FILES := Adafruit_SSD1306.cpp
-SRCS += $(addprefix $(SSD_SRC_DIR)/,$(SSD_SRC_FILES))
-OBJS += $(addprefix $(SSD_OBJ_DIR)/,$(SSD_SRC_FILES:%=%.o))
-INCS += $(SSD_SRC_DIR)
-
-LARD_SRC_DIR := lard
-LARD_OBJ_DIR := $(BUILD_DIR)/lard
-LARD_SRC_FILES := main.cpp
-SRCS += $(addprefix $(LARD_SRC_DIR)/,$(LARD_SRC_FILES))
-OBJS += $(addprefix $(LARD_OBJ_DIR)/,$(LARD_SRC_FILES:%=%.o))
-INCS += $(LARD_SRC_DIR)
-
-
-DEPS := $(OBJS:.o=.d)
+# INC_FLAGS and CPPFLAGS must be recursive (=) not simple (:=)
 
 INC_FLAGS = $(addprefix -I,$(INCS))
 
-CPPFLAGS := $(INC_FLAGS)
+CPPFLAGS = $(INC_FLAGS)
 CPPFLAGS += -MMD -MP
 CPPFLAGS += -DRPI -DARDUINO=100
 CPPFLAGS += -fdata-sections -ffunction-sections
 
-LDFLAGS := -Wl,--gc-sections
-
-
-$(BUILD_DIR)/$(TARGET): $(OBJS)
-	$(CC) $(OBJS) -o $@ $(LDFLAGS)
 
 
 MKDIR_P ?= mkdir -p
 
-define make_rules =
-$(info make_rules for $(1) from $(2))
+define __build_objects =
+
+$(info build_objects $(1))
+$(info --from: sources in $(2))
+$(info --files: $(3))
+
+OBJS += $(addprefix $(BUILD_DIR)/$(1)/,$(3:%=%.o))
+INCS += $(2)
 
 # assembly
-$(1)/%.s.o: $(2)/%.s
-	$(MKDIR_P) $(1)
+$(BUILD_DIR)/$(1)/%.s.o: $(2)/%.s
+	$(MKDIR_P) $(BUILD_DIR)/$(1)
 	$(AS) $(ASFLAGS) -c $$< -o $$@
 
 # c source
-$(1)/%.c.o: $(2)/%.c
-	$(MKDIR_P) $(1)
+$(BUILD_DIR)/$(1)/%.c.o: $(2)/%.c
+	$(MKDIR_P) $(BUILD_DIR)/$(1)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $$< -o $$@
 
 # c++ source
-$(1)/%.cpp.o: $(2)/%.cpp
-	$(MKDIR_P) $(1)
+$(BUILD_DIR)/$(1)/%.cpp.o: $(2)/%.cpp
+	$(MKDIR_P) $(BUILD_DIR)/$(1)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $$< -o $$@
+
+endef
+
+define build_objects =
+$(call __build_objects,$(strip $(1)),$(strip $(2)),$(3))
 endef
 
 
-$(eval $(call make_rules,$(APP_OBJ_DIR),$(APP_SRC_DIR)))
-$(eval $(call make_rules,$(COM_OBJ_DIR),$(COM_SRC_DIR)))
-$(eval $(call make_rules,$(CUI_OBJ_DIR),$(CUI_SRC_DIR)))
-$(eval $(call make_rules,$(GFX_OBJ_DIR),$(GFX_SRC_DIR)))
-$(eval $(call make_rules,$(SSD_OBJ_DIR),$(SSD_SRC_DIR)))
-$(eval $(call make_rules,$(LARD_OBJ_DIR),$(LARD_SRC_DIR)))
+$(eval $(call build_objects,\
+  rpi,\
+  rpi,\
+  bicycle.cpp))
+
+$(eval $(call build_objects,\
+  common,\
+  common,\
+  cell.cpp display.cpp looper.cpp))
+
+$(eval $(call build_objects,\
+  ClearUI,\
+  ../ClearUI/src,\
+  ClearUI_Display.cpp ClearUI_Field.cpp ClearUI_Layout.cpp))
+
+$(eval $(call build_objects,\
+  Adafruit-GFX-Library,\
+  ../ext/Adafruit-GFX-Library,\
+  Adafruit_GFX.cpp))
+
+$(eval $(call build_objects,\
+  Adafruit_SSD1306,\
+  ../ext/Adafruit_SSD1306,\
+  Adafruit_SSD1306.cpp))
+
+$(eval $(call build_objects,\
+  lard,\
+  lard,\
+  main.cpp))
+
+
+
+LDFLAGS := -Wl,--gc-sections
+
+$(BUILD_DIR)/$(TARGET): $(OBJS)
+	$(CC) $(OBJS) -o $@ $(LDFLAGS)
 
 
 
@@ -101,6 +92,9 @@ $(eval $(call make_rules,$(LARD_OBJ_DIR),$(LARD_SRC_DIR)))
 
 clean:
 	$(RM) -r $(BUILD_DIR)
+
+
+DEPS := $(OBJS:.o=.d)
 
 -include $(DEPS)
 
