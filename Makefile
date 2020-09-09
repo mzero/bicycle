@@ -35,12 +35,12 @@ $(BUILD_DIR)/$(1)/%.s.o: $(2)/%.s
 # c source
 $(BUILD_DIR)/$(1)/%.c.o: $(2)/%.c
 	$(MKDIR_P) $(BUILD_DIR)/$(1)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $$< -o $$@
+	$(CC) $$(CPPFLAGS) $(CFLAGS) -c $$< -o $$@
 
 # c++ source
 $(BUILD_DIR)/$(1)/%.cpp.o: $(2)/%.cpp
 	$(MKDIR_P) $(BUILD_DIR)/$(1)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $$< -o $$@
+	$(CXX) $$(CPPFLAGS) $(CXXFLAGS) -c $$< -o $$@
 
 endef
 
