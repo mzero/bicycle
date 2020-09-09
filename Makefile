@@ -80,11 +80,15 @@ $(eval $(call build_objects,\
   main.cpp))
 
 
-
-LDFLAGS := -Wl,--gc-sections
+LIBS := stdc++
+LDFLAGS := -Wl,--gc-sections $(addprefix -l,$(LIBS))
 
 $(BUILD_DIR)/$(TARGET): $(OBJS)
-	$(CC) $(OBJS) -o $@ $(LDFLAGS)
+	$(CC) $(OBJS) -o $@ $(LDFLAGS) 2>&1 | tee $(BUILD_DIR)/link_out
+	@echo === missing ===
+	@grep 'undefined reference to' $(BUILD_DIR)/link_out \
+	| sed -e 's/^.*undefined reference to //' \
+	| sort -u
 
 
 
