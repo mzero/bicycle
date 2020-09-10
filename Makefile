@@ -77,7 +77,7 @@ $(eval $(call build_objects,\
 $(eval $(call build_objects,\
 	lard,\
 	lard,\
-	main.cpp mock.cpp))
+	main.cpp mock.cpp Wire.cpp))
 
 
 LIBS := stdc++

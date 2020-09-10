@@ -1,6 +1,5 @@
 #include "Arduino.h"
 #include "SPI.h"
-#include "Wire.h"
 
 #include <array>
 #include <chrono>
@@ -91,16 +90,4 @@ Serial_t Serial;
 
 void SPIClass::begin() { }
 void SPIClass::transfer(uint8_t) { }
-
-
-/**
- ** Wire - null implementation
- **/
-
-void TwoWire::begin()                     { }
-void TwoWire::beginTransmission(int8_t)   { }
-void TwoWire::endTransmission()           { }
-void TwoWire::write(uint8_t)              { }
-
-TwoWire Wire;
 
