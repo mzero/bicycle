@@ -13,12 +13,13 @@
 
 class syserror {
   public:
-    syserror(int e_) : e(e_) { }
-    int e;
+    inline syserror() : error(errno) { }
+    inline syserror(int e) : error(e) { }
+    int error;
 };
 
 inline std::ostream& operator<<(std::ostream& s, const syserror& se) {
-  s << "[" << std::dec << se.e << ": " << strerror(se.e) << "]";
+  s << "[" << std::dec << se.error << ": " << strerror(se.error) << "]";
   return s;
 }
 
@@ -36,8 +37,8 @@ void TwoWire::begin() {
   if (fd < 0) {
     fd = open("/dev/i2c-1", O_RDWR);
     if (fd < 0) {
-      auto e = errno;
-      std::cerr << "i2c open failed " << syserror(e) << std::endl;
+      syserror e;
+      std::cerr << "i2c open failed " << e << std::endl;
     }
   }
   tx_next = tx_buf.begin();
@@ -53,9 +54,9 @@ void TwoWire::end() {
 void TwoWire::beginTransmission(int8_t addr) {
   if (fd >= 0) {
     if (ioctl(fd, I2C_SLAVE, addr) < 0) {
-      auto e = errno;
+      syserror e;
       std::cerr << "i2c failed to set slave addr of "
-        << std::hex << static_cast<int>(addr) << " " << syserror(e) << std::endl;
+        << std::hex << static_cast<int>(addr) << " " << e << std::endl;
       end();
     }
   }
@@ -65,9 +66,9 @@ void TwoWire::endTransmission() {
   if (fd >= 0) {
     auto n = tx_next - tx_buf.begin();
     if (::write(fd, tx_buf.data(), n) != n) {
-      auto e = errno;
+      syserror e;
       std::cerr << "i2c failed to write " << n << " bytes "
-        << syserror(e) << std::endl;
+        << e << std::endl;
       end();
     }
   }
