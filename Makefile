@@ -52,7 +52,7 @@ endef
 $(eval $(call build_objects,\
 	rpi,\
 	rpi,\
-	bicycle.cpp))
+	bicycle.cpp midi.cpp))
 
 $(eval $(call build_objects,\
 	common,\
@@ -80,7 +80,7 @@ $(eval $(call build_objects,\
 	main.cpp mock.cpp Wire.cpp))
 
 
-LIBS := stdc++
+LIBS := stdc++ asound
 LDFLAGS := -Wl,--gc-sections $(addprefix -l,$(LIBS))
 
 $(BUILD_DIR)/$(TARGET): $(OBJS)

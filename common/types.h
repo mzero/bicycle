@@ -8,10 +8,14 @@ typedef uint16_t DeltaTime;
 typedef uint32_t AbsTime;
 
 
-struct MidiEvent {
-  uint8_t   status;
-  uint8_t   data1;
-  uint8_t   data2;
+union MidiEvent {
+  struct {
+    uint8_t   status;
+    uint8_t   data1;
+    uint8_t   data2;
+  };
+
+  uint8_t bytes[3];
 
   bool isNoteOn() const
     { return (status & 0xf0) == 0x90 && data2 != 0; }

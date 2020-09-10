@@ -2,16 +2,11 @@
 
 #include "display.h"
 #include "looper.h"
+#include "midi.h"
 #include "types.h"
 
 
-// USB MIDI object
-class FauxMidi {
-  public:
-    bool send(const uint8_t[4]) { return false; }
-    bool receive(uint8_t [4])   { return false; }
-};
-FauxMidi usb_midi;
+Midi midi;
 
 
 /*
@@ -37,17 +32,7 @@ enum Boppad {
 
 
 void playEvent(const MidiEvent& ev) {
-  uint8_t packet[4];
-
-  packet[0] = 0 | (ev.status >> 4);
-    // TODO: This works because of the limited range of things the
-    // noteEvent() accepts into the looper... but this should be
-    // fixed support all messages just to be safe.
-  packet[1] = ev.status;
-  packet[2] = ev.data1;
-  packet[3] = ev.data2;
-
-  usb_midi.send(packet);
+  midi.send(ev);
 }
 
 Loop theLoop(playEvent);
@@ -146,14 +131,6 @@ void noteEvent(const MidiEvent& ev) {
   theLoop.addEvent(ev);
 }
 
-void notePacket(const uint8_t packet[4]) {
-  MidiEvent ev;
-  ev.status = packet[1];
-  ev.data1 = packet[2];
-  ev.data2 = packet[3];
-  noteEvent(ev);
-}
-
 
 
 void setup() {
@@ -161,6 +138,8 @@ void setup() {
 
   Serial.begin(115200);
   // while (!Serial);
+
+  midi.begin();
 
   theLoop.begin();
 
@@ -176,9 +155,9 @@ void loop() {
     then = now;
   }
 
-  uint8_t packet[4];
-  while (usb_midi.receive(packet)) {
-    notePacket(packet);
+  MidiEvent ev;
+  while (midi.receive(ev)) {
+    noteEvent(ev);
   }
 
   // analogUpdate(now);
