@@ -64,6 +64,7 @@ void cvOut(int id, float v) {
     // The same adjustment is used for the PWM outputs just to keep things
     // simple.
 
+  v = clamp(v, -1.0, 1.0);
   uint16_t s = round((v * scale + offset + 1.0) * 32768);
   analogWrite(cvPins[id], s);
 }
