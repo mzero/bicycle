@@ -312,7 +312,7 @@ void analogBegin() {
   setupTrig();
 
   for (int i = 0; i < numberOfCvOuts; ++i)
-    cvOut(i, 0.0f);
+    cvOut(i, -1.0f);
   for (int i = 0; i < numberOfTrigOuts; ++i)
     trigOut(i, false);
 
