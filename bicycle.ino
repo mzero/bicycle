@@ -35,6 +35,21 @@ enum Boppad {
 inline float mapMidiToCV(uint8_t val) {
   return val / (127.0f / 2) - 1;
 }
+inline float mapMidiToGate(bool on, uint8_t vel) {
+  constexpr float vhi = 95;
+  constexpr float vlo = 25;
+    // range of velocities seen from the boppad
+
+  constexpr float ghi = 1.0;
+  constexpr float glo = -0.125;
+  constexpr float goff = -1.0;
+    // range of gate levels we want to see
+
+  constexpr float f = (ghi - glo) / (vhi - vlo);
+  constexpr float d = glo - vlo * f;
+
+  return on ? vel * f + d : goff;
+}
 
 void playTrigger(uint8_t note, bool on, uint8_t vel) {
   int t;
@@ -48,8 +63,8 @@ void playTrigger(uint8_t note, bool on, uint8_t vel) {
       return;
   }
 
-  if (on && (t == 1 || t == 2)) {    // only trigs 1 & 2 have c.v. out
-    cvOut(t, mapMidiToCV(vel));
+  if (t < 3) {    // only trigs 0, 1, 2 have gate out
+    cvOut(t, mapMidiToGate(on, vel));
   }
   trigOut(t, on);
 }
@@ -58,7 +73,7 @@ void playCv(uint8_t cc, uint8_t val) {
   int t;
 
   switch (cc) {
-    case ccRadiusLowerLeft:   t = 0;  break;
+    case ccRadiusLowerLeft:   t = 3;  break;
     case ccRadiusLowerRight:  t = 3;  break;
     default:
       return;
