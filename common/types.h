@@ -7,6 +7,8 @@
 typedef uint16_t DeltaTime;
 typedef uint32_t AbsTime;
 
+constexpr AbsTime forever = UINT32_MAX;
+
 
 union MidiEvent {
   struct {

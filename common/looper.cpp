@@ -95,7 +95,7 @@ Loop::Loop(EventFunc func)
   }
 
 
-void Loop::advance(AbsTime now) {
+AbsTime Loop::advance(AbsTime now) {
   // In theory the offs should be interleaved as we go through the next
   // set of cells to play. BUT, since dt has already elapsed, it is roughly
   // okay to just spit out the NoteOff events first. And anyway, dt is rarely
@@ -105,9 +105,12 @@ void Loop::advance(AbsTime now) {
   walltime = now;
     // FIXME: Handle rollover of walltime?
 
+  AbsTime nextT = forever;
+
   for (Cell *p = pendingOff, *q = nullptr; p;) {
     if (dt < p->duration) {
       p->duration -= dt;
+      nextT = std::min(nextT, static_cast<AbsTime>(p->duration));
       q = p;
       p = p->next();
     } else {
@@ -122,46 +125,49 @@ void Loop::advance(AbsTime now) {
     }
   }
 
-  if (!recentCell) return;
-
-  if (recentCell->atEnd()) {
-    if (dt > maxEventInterval - timeSinceRecent) {
-      clear();
-      return;
-    }
-
-    timeSinceRecent += dt;
-    length += dt;
-    position += dt;
-    return;
-  }
-  position = (position + dt) % length;
-
-  while (recentCell->nextTime <= timeSinceRecent + dt) {
-    // time to move to the next event, and play it
-
-    Cell* nextCell = recentCell->next();
-    auto layer = nextCell->layer;
-
-    if (layer == activeLayer && !layerArmed) {
-      // prior data from this layer currently recording into, delete it
-      // note: if the layer is armed, then awaiting first event to start
-      // recording
-      if (nextCell->event.isNoteOn())
-        Util::cancelAwatingOff(*this, nextCell);
-
-      recentCell->link(nextCell->next());
-      recentCell->nextTime += nextCell->nextTime;
-      nextCell->free();
+  if (recentCell) {
+    if (recentCell->atEnd()) {
+      if (dt > maxEventInterval - timeSinceRecent) {
+        clear();
+      } else {
+        timeSinceRecent += dt;
+        length += dt;
+        position += dt;
+      }
     } else {
-      dt -= recentCell->nextTime - timeSinceRecent;
-      timeSinceRecent = 0;
-      recentCell = nextCell;
-      Util::playCell(*this, *recentCell);
+      position = (position + dt) % length;
+
+      while (recentCell->nextTime <= timeSinceRecent + dt) {
+        // time to move to the next event, and play it
+
+        Cell* nextCell = recentCell->next();
+        auto layer = nextCell->layer;
+
+        if (layer == activeLayer && !layerArmed) {
+          // prior data from this layer currently recording into, delete it
+          // note: if the layer is armed, then awaiting first event to start
+          // recording
+          if (nextCell->event.isNoteOn())
+            Util::cancelAwatingOff(*this, nextCell);
+
+          recentCell->link(nextCell->next());
+          recentCell->nextTime += nextCell->nextTime;
+          nextCell->free();
+        } else {
+          dt -= recentCell->nextTime - timeSinceRecent;
+          timeSinceRecent = 0;
+          recentCell = nextCell;
+          Util::playCell(*this, *recentCell);
+        }
+      }
+
+      timeSinceRecent += dt;
+
+      nextT = std::min(nextT,
+        static_cast<AbsTime>(recentCell->nextTime - timeSinceRecent));
     }
   }
-
-  timeSinceRecent += dt;
+  return nextT;
 }
 
 

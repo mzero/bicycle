@@ -22,7 +22,8 @@ class Loop {
 public:
   Loop(EventFunc);
 
-  void advance(AbsTime);
+  AbsTime advance(AbsTime);
+
   void addEvent(const MidiEvent&);
   void keep();      // arm next layer
   void arm();       // clear whole loop when next event added
