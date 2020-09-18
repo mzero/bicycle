@@ -15,14 +15,9 @@ CPPFLAGS += -DRPI -DARDUINO=100
 CPPFLAGS += -fdata-sections -ffunction-sections
 
 
-
 MKDIR_P ?= mkdir -p
 
 define __build_objects =
-
-$(info build_objects $(1))
-$(info --from: sources in $(2))
-$(info --files: $(3))
 
 OBJS += $(addprefix $(BUILD_DIR)/$(1)/,$(3:%=%.o))
 INCS += $(2)

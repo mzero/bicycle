@@ -17,6 +17,10 @@ Bicycle
 	[] ? should be START command? what about duration of trigger?
 
 
+[] AbsTime & DeltaTime are terrible names
+[] catch exit in RPi version and end all notes
+
+
 
 Next
 ----
