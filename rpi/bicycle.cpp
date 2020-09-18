@@ -146,6 +146,11 @@ void setup() {
   Serial.println("Ready!");
 }
 
+void teardown() {
+  // should ensure all notes off here...
+  displayClear();
+}
+
 void loop() {
   static uint32_t then = millis();
   uint32_t now = millis();

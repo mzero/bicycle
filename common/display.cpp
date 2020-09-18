@@ -228,6 +228,13 @@ void displaySetup() {
 }
 
 
+void displayClear() {
+  display.setRotation(0);
+  display.clearDisplay();
+  display.display();
+}
+
+
 namespace {
   Encoder encoder(12, 11);
   Button encoderButton(10);
