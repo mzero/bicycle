@@ -3,23 +3,26 @@
 
 #include <alsa/asoundlib.h>
 #include <iostream>
+#include <poll.h>
 
 namespace {
 
   class AlsaMidi {
     public:
-      AlsaMidi()  : seq(nullptr), mev(nullptr) { };
+      AlsaMidi() { };
       ~AlsaMidi() { end(); }
 
       void begin();
       void end();
 
       bool send(const MidiEvent&);
-      bool receive(MidiEvent&);
+      bool receive(MidiEvent&, AbsTime timeout);
 
     private:
-      snd_seq_t *seq;
-      snd_midi_event_t *mev;
+      snd_seq_t *seq = nullptr;
+      snd_midi_event_t *mev = nullptr;
+      int npfds = 0;
+      struct pollfd *pfds = nullptr;
 
       int inPort;
       int outPort;
@@ -48,6 +51,10 @@ namespace {
       SND_SEQ_PORT_TYPE_APPLICATION);
     if (errFatal(outPort, "create out port")) return;
 
+    npfds = snd_seq_poll_descriptors_count(seq, POLLIN);
+    pfds = new struct pollfd[npfds];
+    npfds = snd_seq_poll_descriptors(seq, pfds, npfds, POLLIN);
+
     serr = snd_midi_event_new(3, &mev);
     if (errFatal(serr, "create event decoder")) return;
 
@@ -55,6 +62,9 @@ namespace {
   }
 
   void AlsaMidi::end() {
+    if (pfds) {
+      delete pfds;
+    }
     if (mev) {
       snd_midi_event_free(mev);
       mev = nullptr;
@@ -88,15 +98,27 @@ namespace {
     return true;
   }
 
-  bool AlsaMidi::receive(MidiEvent& m) {
+  bool AlsaMidi::receive(MidiEvent& m, AbsTime timeout) {
     snd_seq_event_t *ev;
 
     auto q = snd_seq_event_input(seq, &ev);
-    if (q == -EAGAIN) return false;   // nothing there
+    if (q == -EAGAIN) {
+      // nothing there, try once more...
+      if (timeout != forever)
+        std::cout << "tNext = " << std::dec << timeout << std::endl;
+      // int t = (timeout == forever) ? 500 : timeout;
+      // std::cout << "polling " << std::dec << npfds << " fds, waiting " << t << std::endl;
+      // poll(pfds, npfds, t);
+      // q = snd_seq_event_input(seq, &ev);
+      if (q == -EAGAIN)
+        return false;   // still nothing there
+    }
     if (errCheck(q, "event input")) return false;
 
     snd_midi_event_reset_decode(mev);
     auto n = snd_midi_event_decode(mev, m.bytes, sizeof(m.bytes), ev);
+    // snd_seq_seq_free_event(ev);    // no longer needed in modern ALSA
+
     if (errCheck(n, "midi decode")) return false;
 
     return true;
@@ -136,6 +158,11 @@ void Midi::end() {
   }
 }
 
-bool Midi::send(const MidiEvent& ev) { return impl ? impl->send(ev) : false; }
-bool Midi::receive(MidiEvent& ev)    { return impl ? impl->receive(ev) : false; }
+bool Midi::send(const MidiEvent& ev) {
+  return impl ? impl->send(ev) : false;
+}
+
+bool Midi::receive(MidiEvent& ev, AbsTime timeout) {
+  return impl ? impl->receive(ev, timeout) : false;
+}
 

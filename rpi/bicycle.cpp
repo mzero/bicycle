@@ -150,13 +150,14 @@ void loop() {
   static uint32_t then = millis();
   uint32_t now = millis();
 
+  AbsTime timeout = forever;
   if (now > then) {
-    theLoop.advance(now);
+    timeout = theLoop.advance(now);
     then = now;
   }
 
   MidiEvent ev;
-  while (midi.receive(ev)) {
+  while (midi.receive(ev, timeout)) {
     noteEvent(ev);
   }
 
