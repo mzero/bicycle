@@ -2,7 +2,9 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <cstring>
+#include <iostream>
 
 #include "cell.h"
 
@@ -17,6 +19,51 @@ namespace {
     return static_cast<uint8_t>(clamp(
       static_cast<uint32_t>(vel) * static_cast<uint32_t>(vol) / 100,
       0u, 127u));
+  }
+
+  int syncLength(AbsTime base, AbsTime len, AbsTime maxShorten) {
+    const int limit = 7;
+
+    std::cout << "sync: " << base << " :: " << len << " (" << maxShorten << ")\n";
+
+    double b = base;
+    double l = len;
+    double x = 0.0 - maxShorten;
+
+    int nBest = 0;
+    int mBest = 0;
+    double errBest = INFINITY;
+
+    for (int i = 1; i < limit; ++i) {
+      int n;
+      int m;
+
+      if (b < l) {
+        n = std::round(i * l / b);
+        m = i;
+      } else {
+        n = i;
+        m = std::round(i * b / l);
+      }
+      if (i > 1 && (n >= limit || m >= limit)) continue;
+
+      double err = (n * b - m * l) / m;
+      std::cout << "    trying " << n << ":" << m << " gives err " << err << '\n';
+      if (err > x && std::abs(err) < std::abs(errBest)) {
+        nBest = n;
+        mBest = m;
+        errBest = err;
+      }
+    }
+
+    if (nBest == 0) {
+      std::cout << "    failed to find relationship\n";
+      return 0;
+    }
+
+    int adj = round(errBest);
+    std::cout << "    " << nBest << ":" << mBest << ", adjusting by " << adj << "\n";
+    return adj;
   }
 
   AbsTime walltime = 0;
@@ -216,16 +263,20 @@ void Layer::addEvent(const MidiEvent& ev) {
   timeSinceRecent = 0;
 }
 
-void Layer::keep() {
-  if (firstCell) {
-    // closing the loop
-    recentCell->link(firstCell);
-    recentCell->nextTime = timeSinceRecent;
-    firstCell = nullptr;
-  }
+void Layer::keep(AbsTime baseLength) {
+  if (!firstCell) return;
+
+  int adj = 0;
+  if (baseLength > 0)
+    adj = syncLength(baseLength, length, timeSinceRecent);
+
+  // closing the loop
+  recentCell->link(firstCell);
+  recentCell->nextTime = timeSinceRecent + adj;
+  firstCell = nullptr;
 
   // advance into the start of the loop
-  advance(0);
+  advance(adj < 0 ? -adj : 0);
 }
 
 void Layer::clear() {
@@ -311,7 +362,10 @@ void Loop::addEvent(const MidiEvent& ev) {
 void Loop::keep() {
   Layer& l = layers[activeLayer];   // TODO: bounds check
 
-  l.keep();
+  if (activeLayer == 0)
+    l.keep();
+  else
+    l.keep(layers[0].length);
 
   activeLayer += activeLayer < (layers.size() - 1) ? 1 : 0;
   layerArmed = true;

@@ -26,7 +26,7 @@ public:
   AbsTime advance(AbsTime);
 
   void addEvent(const MidiEvent&);
-  void keep();
+  void keep(AbsTime baseLength = 0);
   void clear();
 
   bool muted;

@@ -75,7 +75,7 @@ $(eval $(call build_objects,\
 	main.cpp mock.cpp Wire.cpp))
 
 
-LIBS := stdc++ asound
+LIBS := stdc++ m asound
 LDFLAGS := -Wl,--gc-sections $(addprefix -l,$(LIBS))
 
 $(BUILD_DIR)/$(TARGET): $(OBJS)
