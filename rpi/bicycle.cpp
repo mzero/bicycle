@@ -95,7 +95,7 @@ void noteEvent(const MidiEvent& ev) {
     if ((ev.status & 0xf0) == 0x90) {
       switch (ev.data1) {
         case noteUpperLeft:   theLoop.keep(); break;
-        case noteUpperRight:  theLoop.arm();  break;
+  //    case noteUpperRight:  theLoop.arm();  break;
       }
     }
     return;
