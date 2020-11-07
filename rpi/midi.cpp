@@ -104,8 +104,9 @@ namespace {
     auto q = snd_seq_event_input(seq, &ev);
     if (q == -EAGAIN) {
       // nothing there, try once more...
-      if (timeout != forever)
-        std::cout << "tNext = " << std::dec << timeout << std::endl;
+      if (false && timeout != forever) {
+      	 std::cout << "tNext = " << std::dec << timeout << std::endl;
+	  }
       // int t = (timeout == forever) ? 500 : timeout;
       // std::cout << "polling " << std::dec << npfds << " fds, waiting " << t << std::endl;
       // poll(pfds, npfds, t);
