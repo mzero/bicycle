@@ -454,3 +454,7 @@ AbsTime Loop::setTime(AbsTime now) {
   return dt;
 }
 
+void Loop::allOffNow() {
+  playPendingOff(forever);
+}
+

@@ -148,7 +148,7 @@ void setup() {
 }
 
 void teardown() {
-  // should ensure all notes off here...
+  Loop::allOffNow();
   displayClear();
 }
 

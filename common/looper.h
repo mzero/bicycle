@@ -79,6 +79,8 @@ public:
   static void begin(EventFunc);
   static AbsTime setTime(AbsTime);
 
+  static void allOffNow();
+
 private:
   bool armed;
 
