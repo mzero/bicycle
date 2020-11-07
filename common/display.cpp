@@ -15,47 +15,57 @@ namespace {
 
   protected:
     virtual bool isOutOfDate() {
-      return drawnLooping != currentStatus.looping
-          || drawnMarkerX != markerX();
+      return true; // FIXME drawnLooping != currentStatus.looping;
     }
 
     virtual void redraw() {
-      drawnLooping = currentStatus.looping;
-      drawnMarkerX = markerX();
-
       uint16_t c = foreColor();
-      uint16_t ymid = y + h/2;
 
-      // FIXME: Make these bitmaps
-      display.drawFastVLine(x + 0, y, h, c);
-      display.drawFastVLine(x + 1, y, h, c);
-      display.drawFastVLine(x + 3, y, h, c);
-      display.fillRect(x + 5, ymid - 3, 2, 2, c);
-      display.fillRect(x + 5, ymid + 2, 2, 2, c);
-
-      if (drawnLooping) {
-        display.drawFastVLine(x + w - 1, y, h, c);
-        display.drawFastVLine(x + w - 2, y, h, c);
-        display.drawFastVLine(x + w - 4, y, h, c);
-        display.fillRect(x + w - 7, ymid - 3, 2, 2, c);
-        display.fillRect(x + w - 7, ymid + 2, 2, 2, c);
+      AbsTime spanT = 0;
+      int keyLayer = -1;
+      for (int i = 0; i < currentStatus.layerCount; ++i) {
+        auto& l = currentStatus.layers[i];
+        if (l.length > spanT) {
+          spanT = l.length;
+          keyLayer = i;
+        }
       }
 
-      display.drawFastHLine(x, ymid, w, c);
+      if (spanT == 0) return;
 
-      display.drawFastVLine(x + 8 + drawnMarkerX, ymid - 3, 7, c);
+      uint16_t px = 0;
+
+      if (keyLayer >= 0) {
+        auto& l = currentStatus.layers[keyLayer];
+        uint16_t ly = y + 4*keyLayer;
+
+        display.drawFastHLine(x, ly+1, w, c);
+        display.drawFastVLine(x, ly, 3, c);
+        display.drawFastVLine(x+w-1, ly, 3, c);
+
+        px = x + (l.position * w + (spanT / 2)) / spanT;
+
+        display.drawFastVLine(px, ly, 3, c);
+      }
+      for (int i = 0; i < currentStatus.layerCount; ++i) {
+        if (i == keyLayer) continue;
+
+        auto& l = currentStatus.layers[i];
+        if (l.length == 0) continue;
+
+        uint16_t ly = y + 4*i;
+
+        uint16_t lx = px - ((l.position * w + (spanT / 2)) / spanT);
+        uint16_t lw = l.length * w / spanT;
+
+        display.drawFastHLine(lx, ly+1, lw, c);
+        display.drawFastVLine(lx, ly, 3, c);
+        display.drawFastVLine(lx+lw-1, ly, 3, c);
+        display.drawFastVLine(px, ly, 3, c);
+      }
     }
 
   private:
-    bool      drawnLooping;
-    uint16_t  drawnMarkerX;
-
-    uint16_t markerX() {
-      uint32_t l = w - 16 - 1;
-      if (currentStatus.length == 0) return 0;
-
-      return currentStatus.position * l / currentStatus.length;
-    }
   };
 
 
@@ -98,9 +108,14 @@ namespace {
   protected:
     void drawValue(const AbsTime& t) const {
       auto tenths = (t + 50) / 100;
-      display.printf("%4d.%1d", tenths / 10, tenths % 10);
+      display.printf("%2d.%1ds", tenths / 10, tenths % 10);
     }
-    AbsTime getValue() const { return currentStatus.length; }
+    AbsTime getValue() const {
+      AbsTime spanT = 0;
+      for (int i = 0; i < currentStatus.layerCount; ++i)
+        spanT = std::max(spanT, currentStatus.layers[i].length);
+      return spanT;
+    }
   };
 
 
@@ -110,33 +125,20 @@ namespace {
       : Field(x, y, w, h) { }
   protected:
     bool isOutOfDate() {
-      return drawnLayerCount != currentStatus.layerCount
-          || drawnActiveLayer != currentStatus.activeLayer
-          || drawnLayerArmed != currentStatus.layerArmed
-          || drawnLayerMutes != currentStatus.layerMutes;
+      return true; // FIXME
     }
     void redraw() {
-      drawnLayerCount = currentStatus.layerCount;
-      drawnActiveLayer = currentStatus.activeLayer;
-      drawnLayerArmed = currentStatus.layerArmed;
-      drawnLayerMutes = currentStatus.layerMutes;
-
       auto c = foreColor();
       auto p = x;
 
-      for (uint8_t i = 0; i < drawnLayerCount; ++i) {
-        if (i >= drawnLayerMutes.size()) {
-          display.writePixel(p    , y + 3, c);
-          display.writePixel(p + 2, y + 3, c);
-          display.writePixel(p + 4, y + 3, c);
-          break;
-        }
-        if (i == drawnActiveLayer && drawnLayerArmed)
+      for (uint8_t i = 0; i < currentStatus.layerCount; ++i) {
+        if (i == currentStatus.activeLayer && currentStatus.layerArmed)
                                       display.drawRect(p, y, 4, 4, c);
-        else if (drawnLayerMutes[i])  display.drawFastHLine(p, y + 3, 4, c);
+        else if (currentStatus.layers[i].muted)
+                                      display.drawFastHLine(p, y + 3, 4, c);
         else                          display.fillRect(p, y, 4, 4, c);
 
-        p += 5 + (i % 3 == 2 ? 2 : 0);
+        p += 5 + (i % 3 == 2 ? 3 : 0);
       }
     }
 
@@ -161,10 +163,10 @@ namespace {
   };
 
 
-  auto loopField = LoopField(0, 0, 128, 13);
-  auto lengthField = LengthField(92, 15, 28, 8);
-  auto layerField = LayerField(20, 15, 80, 5);
-  auto armedField = ArmedField(0, 15, 10, 20);
+  auto loopField = LoopField(0, 0, 128, 30);
+  auto lengthField = LengthField(92, 34, 36, 8);
+  auto layerField = LayerField(20, 34, 70, 5);
+  auto armedField = ArmedField(0, 34, 10, 20);
 
   //auto mainPage = Layout({&loopField}, 0);
 

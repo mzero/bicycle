@@ -414,26 +414,25 @@ void Loop::layerArm(uint8_t layer) {
 }
 
 Loop::Status Loop::status() const {
-  AbsTime len = 0;
-  AbsTime pos = 0;
-
-  for (const auto& l : layers) {
-    if (l.length > len) {
-      len = l.length;
-      pos = l.position;
-    }
-  }
   Status s;
-  s.length = len;
-  s.position = pos;
   s.layerCount = layerCount;
   s.activeLayer = activeLayer;
-  s.looping = true; // FIXME -- !firstCell;
   s.armed = armed;
   s.layerArmed = layerArmed;
 
-  for (int i = 0; i < s.layerMutes.size(); ++i)
-    s.layerMutes[i] = (i < layers.size()) ? layers[i].muted : false;
+  for (int i = 0; i < s.layers.size(); ++i) {
+    auto& sl = s.layers[i];
+    if (i < layers.size()) {
+      auto& l = layers[i];
+      sl.length = l.length;
+      sl.position = l.position;
+      sl.muted = l.muted;
+    } else {
+      sl.length = 0;
+      sl.position = 0;
+      sl.muted = false;
+    }
+  }
 
   return s;
 }

@@ -60,15 +60,18 @@ public:
   void layerArm(uint8_t layer);   // start overwriting this layer on next event
 
 
-  struct Status {
+  struct LayerStatus {
     AbsTime     length;
     AbsTime     position;
+    bool        muted;
+  };
+
+  struct Status {
     uint8_t     layerCount;
     uint8_t     activeLayer;
-    bool        looping;
     bool        armed;
     bool        layerArmed;
-    std::array<bool, 9> layerMutes;
+    std::array<LayerStatus, 10> layers;
  };
 
   Status status() const;
