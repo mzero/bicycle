@@ -58,7 +58,7 @@ public:
   void layerMute(uint8_t layer, bool muted);
   void layerVolume(uint8_t layer, uint8_t volume);
   void layerArm(uint8_t layer);   // start overwriting this layer on next event
-
+  void layerRearm();
 
   struct LayerStatus {
     AbsTime     length;

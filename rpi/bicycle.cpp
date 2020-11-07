@@ -75,9 +75,10 @@ void controlEvent(const MidiEvent& ev) {
         case  40: if (ev.data2) theLoop.layerArm(7); break;
         case  41: if (ev.data2) theLoop.layerArm(8); break;
 
-        case  44:  if (ev.data2) theLoop.arm();    break;
-        case  46:  if (ev.data2) theLoop.clear();  break;
-        case  49:  if (ev.data2) theLoop.keep();   break;
+        case  44:  if (ev.data2) theLoop.arm();         break; // REC
+        case  45:  if (ev.data2) theLoop.keep();        break; // PLAY
+        case  46:  if (ev.data2) theLoop.clear();       break; // STOP
+        case  49:  if (ev.data2) theLoop.layerRearm();  break; // LOOP
 
       }
       break;
