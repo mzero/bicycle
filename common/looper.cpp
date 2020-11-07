@@ -275,6 +275,9 @@ void Layer::keep(AbsTime baseLength) {
   recentCell->nextTime = timeSinceRecent + adj;
   firstCell = nullptr;
 
+  length += adj;
+  position = position % length;
+
   // advance into the start of the loop
   advance(adj < 0 ? -adj : 0);
 }
@@ -362,10 +365,7 @@ void Loop::addEvent(const MidiEvent& ev) {
 void Loop::keep() {
   Layer& l = layers[activeLayer];   // TODO: bounds check
 
-  if (activeLayer == 0)
-    l.keep();
-  else
-    l.keep(layers[0].length);
+  l.keep(layers[activeLayer ? 0 : 1].length);
 
   activeLayer += activeLayer < (layers.size() - 1) ? 1 : 0;
   layerArmed = true;
