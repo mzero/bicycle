@@ -18,47 +18,56 @@ namespace {
       static_cast<uint32_t>(vel) * static_cast<uint32_t>(vol) / 100,
       0u, 127u));
   }
-}
 
-class Loop::Util {
-public:
-  static void startAwaitingOff(Loop& loop, Cell* cell) {
-    finishAwaitingOff(loop, cell->event);
-    auto& ao = loop.awaitingOff[cell->event.data1];
-    ao.cell = cell;
-    ao.start = loop.walltime;
+  AbsTime walltime = 0;
+
+  EventFunc player;
+
+
+  struct AwaitOff {
+    Cell* cell;
+    AbsTime start;
+  };
+
+  std::array<AwaitOff, 128> awaitingOff;
+
+  Cell* pendingOff = nullptr;
+
+
+  void finishAwaitingOff(const MidiEvent& ev) {
+    auto& ao = awaitingOff[ev.data1];
+    if (ao.cell) {
+      ao.cell->duration = walltime - ao.start;
+      ao.cell = nullptr;
+    }
   }
 
-  static void cancelAwatingOff(Loop& loop, const Cell* cell) {
-    auto& ao = loop.awaitingOff[cell->event.data1];
+  void startAwaitingOff(Cell* cell) {
+    finishAwaitingOff(cell->event);
+    auto& ao = awaitingOff[cell->event.data1];
+    ao.cell = cell;
+    ao.start = walltime;
+  }
+
+  void cancelAwatingOff(const Cell* cell) {
+    auto& ao = awaitingOff[cell->event.data1];
     if (ao.cell == cell) {
       ao.cell = nullptr;
     }
   }
 
-  static void finishAwaitingOff(Loop& loop, const MidiEvent& ev) {
-    auto& ao = loop.awaitingOff[ev.data1];
-    if (ao.cell) {
-      ao.cell->duration = loop.walltime - ao.start;
-      ao.cell = nullptr;
-    }
-  }
-
-  static void clearAwatingOff(Loop& loop) {
-    for (auto& ao : loop.awaitingOff)
+  void clearAwatingOff() {
+    for (auto& ao : awaitingOff)
       ao = {nullptr, 0};
   }
 
 
-  static void playCell(Loop& loop, const Cell& cell) {
-    auto layer = cell.layer;
-    if (layer < loop.layerMutes.size() && loop.layerMutes[layer])
-      return;
+  void playCell(const Cell& cell, bool mute, uint8_t volume) {
+    if (mute) return;
 
     if (cell.event.isNoteOn() && cell.duration > 0) {
       MidiEvent note = cell.event;
-      if (layer < loop.layerVolumes.size())
-        note.data2 = scaleVelocity(note.data2, loop.layerVolumes[layer]);
+      note.data2 = scaleVelocity(note.data2, volume);
       if (note.data2 == 0)
         return;
 
@@ -66,64 +75,60 @@ public:
       if (!offCell)
         return;   // don't play NoteOn if can't allocate NoteOff
 
-      loop.player(note);
+      player(note);
 
       offCell->event = note;
       offCell->event.data2 = 0; // volume 0 makes it a NoteOff
       offCell->duration = cell.duration;
-      offCell->link(loop.pendingOff);
-      loop.pendingOff = offCell;
+      offCell->link(pendingOff);
+      pendingOff = offCell;
     } else {
-      loop.player(cell.event);
+      player(cell.event);
     }
   }
-};
 
+  AbsTime playPendingOff(AbsTime dt) {
+    AbsTime nextT = forever;
 
-Loop::Loop(EventFunc func)
-  : player(func),
-    walltime(0),
-    armed(true), layerCount(1), activeLayer(0), layerArmed(false),
+    for (Cell *p = pendingOff, *q = nullptr; p;) {
+      if (dt < p->duration) {
+        p->duration -= dt;
+        nextT = std::min(nextT, static_cast<AbsTime>(p->duration));
+        q = p;
+        p = p->next();
+      } else {
+        player(p->event);
+
+        Cell* n = p->next();
+        p->free();
+
+        if (q)  q->link(n);
+        else    pendingOff = n;
+        p = n;
+      }
+    }
+
+    return nextT;
+  }
+}
+
+Layer::Layer()
+  : muted(false), volume(100),
     firstCell(nullptr), recentCell(nullptr),
-    timeSinceRecent(0), length(0), position(0),
-    pendingOff(nullptr)
-  {
-    for (auto& m : layerMutes) m = false;
-    for (auto& v : layerVolumes) v = 100;
+    timeSinceRecent(0), length(0), position(0)
+  { }
 
-    Util::clearAwatingOff(*this);
-  }
+Layer::~Layer()
+  { clear(); }
 
+AbsTime Layer::next() const {
+  if (!recentCell) return forever;
+  if (recentCell->atEnd()) return forever;
+  return recentCell->nextTime - timeSinceRecent;
+}
 
-AbsTime Loop::advance(AbsTime now) {
-  // In theory the offs should be interleaved as we go through the next
-  // set of cells to play. BUT, since dt has already elapsed, it is roughly
-  // okay to just spit out the NoteOff events first. And anyway, dt is rarely
-  // more than 1.
-
-  AbsTime dt = now - walltime;
-  walltime = now;
-    // FIXME: Handle rollover of walltime?
-
+AbsTime Layer::advance(AbsTime dt) {
   AbsTime nextT = forever;
-
-  for (Cell *p = pendingOff, *q = nullptr; p;) {
-    if (dt < p->duration) {
-      p->duration -= dt;
-      nextT = std::min(nextT, static_cast<AbsTime>(p->duration));
-      q = p;
-      p = p->next();
-    } else {
-      player(p->event);
-
-      Cell* n = p->next();
-      p->free();
-
-      if (q)  q->link(n);
-      else    pendingOff = n;
-      p = n;
-    }
-  }
 
   if (recentCell) {
     if (recentCell->atEnd()) {
@@ -141,60 +146,28 @@ AbsTime Loop::advance(AbsTime now) {
         // time to move to the next event, and play it
 
         Cell* nextCell = recentCell->next();
-        auto layer = nextCell->layer;
 
-        if (layer == activeLayer && !layerArmed) {
-          // prior data from this layer currently recording into, delete it
-          // note: if the layer is armed, then awaiting first event to start
-          // recording
-          if (nextCell->event.isNoteOn())
-            Util::cancelAwatingOff(*this, nextCell);
-
-          recentCell->link(nextCell->next());
-          recentCell->nextTime += nextCell->nextTime;
-          nextCell->free();
-        } else {
-          dt -= recentCell->nextTime - timeSinceRecent;
-          timeSinceRecent = 0;
-          recentCell = nextCell;
-          Util::playCell(*this, *recentCell);
-        }
+        dt -= recentCell->nextTime - timeSinceRecent;
+        timeSinceRecent = 0;
+        recentCell = nextCell;
+        playCell(*recentCell, muted, volume);
       }
 
       timeSinceRecent += dt;
 
-      nextT = std::min(nextT,
-        static_cast<AbsTime>(recentCell->nextTime - timeSinceRecent));
+      nextT = static_cast<AbsTime>(recentCell->nextTime - timeSinceRecent);
     }
   }
   return nextT;
 }
 
-
-void Loop::addEvent(const MidiEvent& ev) {
-  if (ev.isNoteOff()) {
-    // note off processing
-    player(ev);
-    Util::finishAwaitingOff(*this, ev);
-    return;
-  }
-
-  if (armed) {
-    clear();
-    armed = false;
-  }
-  if (layerArmed) {
-    layerArmed = false;
-  }
-
-  if (activeLayer < layerMutes.size())
-    layerMutes[activeLayer] = false;
+void Layer::addEvent(const MidiEvent& ev) {
+  muted = false;
     // TODO: Should we be doing this? how to communicate back to controller?
 
   if (ev.isNoteOn()) {
     MidiEvent note = ev;
-    if (activeLayer < layerVolumes.size())
-      note.data2 = scaleVelocity(note.data2, layerVolumes[activeLayer]);
+    note.data2 = scaleVelocity(note.data2, volume);
     player(note);
   } else {
     player(ev);
@@ -203,12 +176,12 @@ void Loop::addEvent(const MidiEvent& ev) {
   Cell* newCell = Cell::alloc();
   if (!newCell) return; // ran out of cells!
   newCell->event = ev;
-  newCell->layer = activeLayer;
   newCell->duration = 0;
 
   if (ev.isNoteOn())
-    Util::startAwaitingOff(*this, newCell);
+    startAwaitingOff(newCell);
 
+/* FIXME
   if (!recentCell) {
     // first time through, add the "start" note
     Cell* startCell = Cell::alloc();
@@ -223,6 +196,7 @@ void Loop::addEvent(const MidiEvent& ev) {
       Util::playCell(*this, *recentCell);
     }
   }
+*/
 
   if (recentCell) {
     Cell* nextCell = recentCell->next();
@@ -242,8 +216,7 @@ void Loop::addEvent(const MidiEvent& ev) {
   timeSinceRecent = 0;
 }
 
-
-void Loop::keep() {
+void Layer::keep() {
   if (firstCell) {
     // closing the loop
     recentCell->link(firstCell);
@@ -251,19 +224,11 @@ void Loop::keep() {
     firstCell = nullptr;
   }
 
-  activeLayer += activeLayer < (layerMutes.size() - 1) ? 1 : 0;
-  layerArmed = true;
-  layerCount = std::max<uint8_t>(layerCount, activeLayer + 1);
-
   // advance into the start of the loop
-  advance(walltime);
+  advance(0);
 }
 
-void Loop::arm() {
-  armed = true;
-}
-
-void Loop::clear() {
+void Layer::clear() {
   Cell* start = recentCell;
 
   while (recentCell) {
@@ -274,28 +239,109 @@ void Loop::clear() {
       break;
   }
 
-  Util::clearAwatingOff(*this);
-
-  firstCell = nullptr;
   recentCell = nullptr;
+  firstCell = nullptr;
+
   timeSinceRecent = 0;
   length = 0;
   position = 0;
+
+  muted = false;
+  volume = 100;
+    // TODO: How to communicate back to controller?
+}
+
+Loop::Loop()
+  : armed(true), layerCount(0), activeLayer(0), layerArmed(false),
+    layers(10)
+  {
+    clearAwatingOff();
+  }
+
+
+AbsTime Loop::advance(AbsTime dt) {
+  // In theory the offs should be interleaved as we go through the next
+  // set of cells to play. BUT, since dt has already elapsed, it is roughly
+  // okay to just spit out the NoteOff events first. And anyway, dt is rarely
+  // more than 1.
+
+  AbsTime nextT = playPendingOff(dt);
+
+  for (auto& l : layers)
+    nextT = std::min(nextT, l.next());
+
+  while (dt > 0) {
+    AbsTime et = std::min(dt, nextT);
+
+    nextT = forever;
+    for (auto& l : layers)
+      nextT = std::min(nextT, l.advance(et));
+
+    dt -= et;
+  }
+
+  return nextT;
+}
+
+
+void Loop::addEvent(const MidiEvent& ev) {
+  if (ev.isNoteOff()) {
+    // note off processing
+    player(ev);
+    finishAwaitingOff(ev);
+    return;
+  }
+
+  if (armed) {
+    clear();
+    armed = false;
+  }
+
+  Layer& l = layers[activeLayer];   // TODO: bounds check
+
+  if (layerArmed) {
+    l.clear();
+    layerArmed = false;
+  }
+
+  l.addEvent(ev);
+}
+
+
+void Loop::keep() {
+  Layer& l = layers[activeLayer];   // TODO: bounds check
+
+  l.keep();
+
+  activeLayer += activeLayer < (layers.size() - 1) ? 1 : 0;
+  layerArmed = true;
+  layerCount = std::max<uint8_t>(layerCount, activeLayer + 1);
+}
+
+void Loop::arm() {
+  armed = true;
+}
+
+void Loop::clear() {
+
+  clearAwatingOff();
+
+  for (auto& l : layers)
+    l.clear();
+
   armed = true;
   layerCount = 1;
   activeLayer = 0;
   layerArmed = true;
-  for (auto& m : layerMutes) m = false;
-    // TODO: Should we be doing this? how to communicate back to controller?
 }
 
 
 void Loop::layerMute(uint8_t layer, bool muted) {
-  if (layer < layerMutes.size()) layerMutes[layer] = muted;
+  if (layer < layers.size()) layers[layer].muted = muted;
 }
 
 void Loop::layerVolume(uint8_t layer, uint8_t volume) {
-  if (layer < layerVolumes.size()) layerVolumes[layer] = volume;
+  if (layer < layers.size()) layers[layer].volume = volume;
 }
 
 void Loop::layerArm(uint8_t layer) {
@@ -314,19 +360,40 @@ void Loop::layerArm(uint8_t layer) {
 }
 
 Loop::Status Loop::status() const {
+  AbsTime len = 0;
+  AbsTime pos = 0;
+
+  for (const auto& l : layers) {
+    if (l.length > len) {
+      len = l.length;
+      pos = l.position;
+    }
+  }
   Status s;
-  s.length = length;
-  s.position = position;
+  s.length = len;
+  s.position = pos;
   s.layerCount = layerCount;
   s.activeLayer = activeLayer;
-  s.looping = !firstCell;
+  s.looping = true; // FIXME -- !firstCell;
   s.armed = armed;
   s.layerArmed = layerArmed;
-  s.layerMutes = layerMutes;
+
+  for (int i = 0; i < s.layerMutes.size(); ++i)
+    s.layerMutes[i] = (i < layers.size()) ? layers[i].muted : false;
+
   return s;
 }
 
-void Loop::begin() {
+void Loop::begin(EventFunc p) {
+  player = p;
   Cell::begin();
+}
+
+AbsTime Loop::setTime(AbsTime now) {
+  if (now < walltime) return 0;
+    // FIXME: Handle rollover of walltime?
+  AbsTime dt = now - walltime;
+  walltime = now;
+  return dt;
 }
 

@@ -35,7 +35,7 @@ void playEvent(const MidiEvent& ev) {
   midi.send(ev);
 }
 
-Loop theLoop(playEvent);
+Loop theLoop;
 
 
 void controlEvent(const MidiEvent& ev) {
@@ -141,7 +141,7 @@ void setup() {
 
   midi.begin();
 
-  theLoop.begin();
+  theLoop.begin(playEvent);
 
   Serial.println("Ready!");
 }
@@ -157,7 +157,8 @@ void loop() {
 
   AbsTime timeout = forever;
   if (now > then) {
-    timeout = theLoop.advance(now);
+    AbsTime dt = theLoop.setTime(now);
+    timeout = theLoop.advance(dt);
     then = now;
   }
 

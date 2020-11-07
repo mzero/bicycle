@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cstdint>
+#include <vector>
 
 #include "cell.h"
 #include "types.h"
@@ -16,11 +17,36 @@ typedef void (*EventFunc)(const MidiEvent&);
   // TODO: Needs time somehow? delta? absolute?
 
 
+class Layer {
+public:
+  Layer();
+  ~Layer();
+
+  AbsTime next() const;
+  AbsTime advance(AbsTime);
+
+  void addEvent(const MidiEvent&);
+  void keep();
+  void clear();
+
+  bool muted;
+  uint8_t volume;
+
+private:
+  Cell* firstCell;
+  Cell* recentCell;
+  DeltaTime timeSinceRecent;
+
+  AbsTime length;
+  AbsTime position;
+
+  friend class Loop;
+};
 
 
 class Loop {
 public:
-  Loop(EventFunc);
+  Loop();
 
   AbsTime advance(AbsTime);
 
@@ -47,41 +73,18 @@ public:
 
   Status status() const;
 
-  static void begin();
+  static void begin(EventFunc);
+  static AbsTime setTime(AbsTime);
 
 private:
-  const EventFunc player;
+  bool armed;
 
-  AbsTime   walltime;
-
-  bool      armed;
-
-  uint8_t layerCount;
   uint8_t activeLayer;
+  uint8_t layerCount;
   bool layerArmed;
   AbsTime armedTime;
 
-  std::array<bool, 9> layerMutes;
-  std::array<uint8_t, 9> layerVolumes;
-
-  Cell* firstCell;
-  Cell* recentCell;
-  DeltaTime timeSinceRecent;
-
-  AbsTime length;
-  AbsTime position;
-
-  struct AwaitOff {
-    Cell* cell;
-    AbsTime start;
-  };
-
-  std::array<AwaitOff, 128> awaitingOff;
-
-  Cell* pendingOff;
-
-  class Util;
-  friend class Util;
+  std::vector<Layer> layers;
 };
 
 
