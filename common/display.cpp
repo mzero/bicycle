@@ -165,7 +165,7 @@ namespace {
 
   auto loopField = LoopField(0, 0, 128, 30);
   auto lengthField = LengthField(92, 34, 36, 8);
-  auto layerField = LayerField(20, 34, 70, 5);
+  auto layerField = LayerField(20, 37, 70, 5);
   auto armedField = ArmedField(0, 34, 10, 20);
 
   //auto mainPage = Layout({&loopField}, 0);
