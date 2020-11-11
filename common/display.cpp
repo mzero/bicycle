@@ -5,6 +5,11 @@
 
 namespace {
 
+  template< typename T >
+  inline T roundingDivide(T x, T q) {
+    return (x + q / 2) / q;
+  }
+
   Loop::Status currentStatus;
 
   class LoopField : public Field {
@@ -22,11 +27,13 @@ namespace {
       uint16_t c = foreColor();
 
       AbsTime spanT = 0;
+      AbsTime keyPos = 0;
       int keyLayer = -1;
       for (int i = 0; i < currentStatus.layerCount; ++i) {
         auto& l = currentStatus.layers[i];
         if (l.length > spanT) {
           spanT = l.length;
+          keyPos = l.position;
           keyLayer = i;
         }
       }
@@ -37,13 +44,13 @@ namespace {
 
       if (keyLayer >= 0) {
         auto& l = currentStatus.layers[keyLayer];
-        uint16_t ly = y + 4*keyLayer;
+        int16_t ly = y + 4*keyLayer;
 
         display.drawFastHLine(x, ly+1, w, c);
         display.drawFastVLine(x, ly, 3, c);
         display.drawFastVLine(x+w-1, ly, 3, c);
 
-        px = x + (l.position * w + (spanT / 2)) / spanT;
+        px = x + roundingDivide(l.position * w, spanT);
 
         display.drawFastVLine(px, ly, 3, c);
       }
@@ -53,10 +60,12 @@ namespace {
         auto& l = currentStatus.layers[i];
         if (l.length == 0) continue;
 
-        uint16_t ly = y + 4*i;
+        int ls = static_cast<int>(keyPos) - static_cast<int>(l.position);
+        int ll = static_cast<int>(l.length);
 
-        uint16_t lx = px - ((l.position * w + (spanT / 2)) / spanT);
-        uint16_t lw = l.length * w / spanT;
+        int16_t ly = y + 4*i;
+        int16_t lx = x + roundingDivide(ls * w, static_cast<int>(spanT));
+        int16_t lw = roundingDivide(ll * w, static_cast<int>(spanT));
 
         display.drawFastHLine(lx, ly+1, lw, c);
         display.drawFastVLine(lx, ly, 3, c);
