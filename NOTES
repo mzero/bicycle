@@ -1,29 +1,51 @@
 
-Bicycle
-=======
+Bicycle To Do
+=============
 
 
+Features
+--------
 
-[] fix display when clear (it shouldn't have end bar)
+[] beat & tempo detection
+  [] MIDI clock generation
+  [] Link (?)
+[] MIDI channel shift (?)
+[] visual, live configuration
+  [] save & restore from files
+[] track fx
+  [] erosion: remove more and more notes (stable) as fader turned down
+  [] quantization (?)
+  [] 2x , 1/2x speed
+  [] octave shift
+  [] diatonic shift (?- ick, then you need to know the key...)
+[] feedback to controller's buttons for mute and arm
+[] visual representation of recorded notes (? probably not really a good idea)
+[] more than 10 layers?
+  [] would need heap algo. for sorting next event
+
+
+Implementation
+--------------
+[] note off table needs to be by note & channel
+[] higher resolution time unit
+[] measure processing time
+
 [] display cells in use (?)
 [] displaying too often
 	[] what is the timing of the display operation?
 
-[] something is still messed up about lenghts
-	- play rapid short chords - some notes are held toooooo long
-
-[] 2nd arm is total clear ??
 [] fix hack of start note definition
 	[] ? should be START command? what about duration of trigger?
 
-
 [] AbsTime & DeltaTime are terrible names
-[] catch exit in RPi version and end all notes
+[] clean up delta times and checking for overflows
+	- durations on note off
+	- advance big jump
+	- others?
 
 
-
-Next
-----
+Other Ideas
+-----------
 
 [] layer range controls
 
@@ -45,42 +67,13 @@ Next
 		note off for pitch X, yes?
 		- also cancel or end any awaiting offs?
 
-[] clean up delta times and checking for overflows
-	- durations on note off
-	- advance big jump
-	- others?
-
-
-
-laters
-======
-
 [] rationalize channels?
 	- ch. 16 is control
 	- but somethings on playing channels could be control
       like sustain pedal (CC 64) for "keep" function
 
-[] some configuration system
-
-[] other possible controls
-	[] clear last layer/epoch
-
-[] double / half loop
-
-[] two loops?
-[] different length layers? (would be like multiple loops, sync'd to
-	ration of lengths)
-
 [] async the loops if desired
 
-[] tracking playing speed
-[] output MIDI clock and/or clock pulse on an output
-
-
-
-
-Notes
-=====
 
 
 
