@@ -9,12 +9,16 @@ class Print {
   public:
     void print(bool);
     void print(short int);
+    void print(unsigned short int);
+    void print(int);
     void print(unsigned int);
     void print(char);
     void print(const char*);
     
     void println(bool);
     void println(short int);
+    void println(unsigned short int);
+    void println(int);
     void println(unsigned int);
     void println(char);
     void println(const char*);

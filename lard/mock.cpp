@@ -49,26 +49,30 @@ uint32_t digitalPinToBitMask(int pin) { return 1 << (pin % 32); }
  ** Print & Serial
  **/
 
-void Print::print(bool b)           { printf("%d", b ? 0 : 1); }
-void Print::print(short int i)      { printf("%d", i); }
-void Print::print(unsigned int u)   { printf("%u", u); }
-void Print::print(char c)           { write(c); }
-void Print::print(const char* s)    { printf("%s", s); }
+void Print::print(bool b)                   { printf("%d", b ? 0 : 1); }
+void Print::print(short int i)              { printf("%d", i); }
+void Print::print(unsigned short int u)     { printf("%u", u); }
+void Print::print(int i)                    { printf("%d", i); }
+void Print::print(unsigned int u)           { printf("%u", u); }
+void Print::print(char c)                   { write(c); }
+void Print::print(const char* s)            { printf("%s", s); }
 
-void Print::println(bool b)           { printf("%d\n", b ? 0 : 1); }
-void Print::println(short int i)      { printf("%d\n", i); }
-void Print::println(unsigned int u)   { printf("%u\n", u); }
-void Print::println(char c)           { write(c); write('\n'); }
-void Print::println(const char* s)    { printf("%s\n", s); }
+void Print::println(bool b)                 { printf("%d\n", b ? 0 : 1); }
+void Print::println(short int i)            { printf("%d\n", i); }
+void Print::println(unsigned short int u)   { printf("%u\n", u); }
+void Print::println(int i)                  { printf("%d\n", i); }
+void Print::println(unsigned int u)         { printf("%u\n", u); }
+void Print::println(char c)                 { write(c); write('\n'); }
+void Print::println(const char* s)          { printf("%s\n", s); }
 
 void Print::printf(const char* fmt, ...) {
   std::array<char, 1000> buf;
-  
+
   va_list args;
   va_start(args, fmt);
   std::vsnprintf(buf.data(), buf.size(), fmt, args);
   va_end(args);
-  
+
   for (char c : buf) {
     if (c == 0) break;
     write(c);
