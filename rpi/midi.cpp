@@ -119,7 +119,7 @@ namespace {
     snd_midi_event_reset_decode(mev);
     auto n = snd_midi_event_decode(mev, m.bytes, sizeof(m.bytes), ev);
     // snd_seq_seq_free_event(ev);    // no longer needed in modern ALSA
-
+    if (n == -ENOENT) return false;   // some other port event (like SUBSCRIBE)
     if (errCheck(n, "midi decode")) return false;
 
     return true;

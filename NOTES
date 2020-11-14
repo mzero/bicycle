@@ -3,6 +3,11 @@ Bicycle To Do
 =============
 
 
+Bugs
+----
+[x] when connecting an input:
+  ALSA Seq error -2 in midi decode
+
 Features
 --------
 
@@ -26,7 +31,11 @@ Features
 
 Implementation
 --------------
-[] note off table needs to be by note & channel
+[] awaiting off table needs to be by note & channel
+  - that's too big to be reasonable - so will need to do some kind of hashed
+    table scheme. In general, don't expect to be waiting more than 10 notes
+    at a time.
+
 [] higher resolution time unit
 [] measure processing time
 
