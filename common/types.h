@@ -5,9 +5,10 @@
 
 
 typedef uint16_t DeltaTime;
-typedef uint32_t AbsTime;
+typedef int32_t AbsTime;
 
-constexpr AbsTime forever = UINT32_MAX;
+constexpr DeltaTime maxDelta = UINT16_MAX;
+constexpr AbsTime forever = INT32_MAX;
 
 
 union MidiEvent {

@@ -60,12 +60,12 @@ namespace {
         auto& l = currentStatus.layers[i];
         if (l.length == 0) continue;
 
-        int ls = static_cast<int>(keyPos) - static_cast<int>(l.position);
-        int ll = static_cast<int>(l.length);
+        AbsTime ls = keyPos - l.position;
+        AbsTime ll = l.length;
 
         int16_t ly = y + 4*i;
-        int16_t lx = x + roundingDivide(ls * w, static_cast<int>(spanT));
-        int16_t lw = roundingDivide(ll * w, static_cast<int>(spanT));
+        int16_t lx = x + roundingDivide(ls * w, spanT);
+        int16_t lw = roundingDivide(ll * w, spanT);
 
         display.drawFastHLine(lx, ly+1, lw, c);
         display.drawFastVLine(lx, ly, 3, c);

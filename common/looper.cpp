@@ -8,6 +8,8 @@
 
 #include "cell.h"
 
+#pragma GCC diagnostic error "-Wconversion"
+  // this code should be meticulous about conversions
 
 namespace {
   template<typename T>
@@ -39,11 +41,11 @@ namespace {
       int m;
 
       if (b < l) {
-        n = std::round(i * l / b);
+        n = std::lround(i * l / b);
         m = i;
       } else {
         n = i;
-        m = std::round(i * b / l);
+        m = std::lround(i * b / l);
       }
       if (i > 1 && (n >= limit || m >= limit)) continue;
 
@@ -61,7 +63,7 @@ namespace {
       return 0;
     }
 
-    int adj = round(errBest);
+    int adj = lround(errBest);
     std::cout << "    " << nBest << ":" << mBest << ", adjusting by " << adj << "\n";
     return adj;
   }
@@ -84,7 +86,9 @@ namespace {
   void finishAwaitingOff(const MidiEvent& ev) {
     auto& ao = awaitingOff[ev.data1];
     if (ao.cell) {
-      ao.cell->duration = walltime - ao.start;
+      AbsTime dur = walltime - ao.start;
+      dur = clamp(dur, 1, static_cast<AbsTime>(maxDelta));
+      ao.cell->duration = static_cast<DeltaTime>(dur);
       ao.cell = nullptr;
     }
   }
@@ -139,7 +143,7 @@ namespace {
 
     for (Cell *p = pendingOff, *q = nullptr; p;) {
       if (dt < p->duration) {
-        p->duration -= dt;
+        p->duration = static_cast<DeltaTime>(p->duration - dt);
         nextT = std::min(nextT, static_cast<AbsTime>(p->duration));
         q = p;
         p = p->next();
@@ -202,7 +206,7 @@ AbsTime Layer::advance(AbsTime dt) {
 
       timeSinceRecent += dt;
 
-      nextT = static_cast<AbsTime>(recentCell->nextTime - timeSinceRecent);
+      nextT = static_cast<AbsTime>(recentCell->nextTime) - timeSinceRecent;
     }
   }
   return nextT;
@@ -249,11 +253,12 @@ void Layer::addEvent(const MidiEvent& ev) {
     Cell* nextCell = recentCell->next();
     if (nextCell) {
       newCell->link(nextCell);
-      newCell->nextTime = recentCell->nextTime - timeSinceRecent;
+      newCell->nextTime =
+        static_cast<DeltaTime>(recentCell->nextTime - timeSinceRecent);
     }
 
     recentCell->link(newCell);
-    recentCell->nextTime = timeSinceRecent;
+    recentCell->nextTime = static_cast<DeltaTime>(timeSinceRecent);
   } else {
     firstCell = newCell;
     // FIXME: note "the one" here?
@@ -266,13 +271,13 @@ void Layer::addEvent(const MidiEvent& ev) {
 void Layer::keep(AbsTime baseLength) {
   if (!firstCell) return;
 
-  int adj = 0;
+  AbsTime adj = 0;
   if (baseLength > 0)
     adj = syncLength(baseLength, length, timeSinceRecent);
 
   // closing the loop
   recentCell->link(firstCell);
-  recentCell->nextTime = timeSinceRecent + adj;
+  recentCell->nextTime = static_cast<DeltaTime>(timeSinceRecent + adj);
   firstCell = nullptr;
 
   length += adj;

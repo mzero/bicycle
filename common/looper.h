@@ -35,7 +35,7 @@ public:
 private:
   Cell* firstCell;
   Cell* recentCell;
-  DeltaTime timeSinceRecent;
+  AbsTime timeSinceRecent;
 
   AbsTime length;
   AbsTime position;
