@@ -4,6 +4,7 @@
 namespace {
   bool      storageInitialized = false;
   CellIndex freeIndex;
+  int       useCount = 0;
 }
 
 Cell Cell::storage[2000];
@@ -28,12 +29,14 @@ Cell* Cell::alloc() {
   Cell* c = &storage[freeIndex];
   freeIndex = c->nextCell;
   c->nextCell = nullIndex;
+  ++useCount;
   return c;
 }
 
 void Cell::free() {
   this->nextCell = freeIndex;
   freeIndex = this - storage;
+  --useCount;
 }
 
 
@@ -43,4 +46,9 @@ Cell* Cell::next() const {
 
 void Cell::link(Cell* newNext) {
   nextCell = newNext ? newNext - storage : nullIndex;
+}
+
+
+int Cell::inUse() {
+  return useCount;
 }

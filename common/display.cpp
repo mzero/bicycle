@@ -2,6 +2,7 @@
 
 #include <ClearUI.h>
 
+#include "cell.h"
 
 namespace {
 
@@ -171,11 +172,20 @@ namespace {
     bool getValue() const { return currentStatus.armed; }
   };
 
+  class CellCountField : public TextField<int> {
+  public:
+    CellCountField(int16_t x, int16_t y, uint16_t w, uint16_t h)
+      : TextField<int>(x, y, w, h) { }
+  protected:
+    int getValue() const { return Cell::inUse(); }
+  };
+
 
   auto loopField = LoopField(0, 0, 128, 30);
   auto lengthField = LengthField(92, 34, 36, 8);
   auto layerField = LayerField(20, 37, 70, 5);
   auto armedField = ArmedField(0, 34, 10, 20);
+  auto cellField = CellCountField(92, 50, 36, 8);
 
   //auto mainPage = Layout({&loopField}, 0);
 
@@ -212,6 +222,7 @@ namespace {
     drew |= lengthField.render(force);
     drew |= layerField.render(force);
     drew |= armedField.render(force);
+    drew |= cellField.render(force);
 
     if (drew)
       display.display();

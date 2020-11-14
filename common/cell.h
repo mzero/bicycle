@@ -26,7 +26,8 @@ public:
   void link(Cell*);
 
   static void begin();
-
+  static int inUse();
+  
 private:
   Cell() { };
 

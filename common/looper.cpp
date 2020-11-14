@@ -290,11 +290,12 @@ void Layer::keep(AbsTime baseLength) {
 void Layer::clear() {
   Cell* start = recentCell;
 
-  while (recentCell) {
-    Cell* doomed = recentCell;
-    recentCell = doomed->next();
+  Cell* curr = start;
+  while (curr) {
+    Cell* doomed = curr;
+    curr = doomed->next();
     doomed->free();
-    if (recentCell == start)
+    if (curr == start)
       break;
   }
 
