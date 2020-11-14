@@ -55,9 +55,9 @@ public:
   void arm();       // clear whole loop when next event added
   void clear();
 
-  void layerMute(uint8_t layer, bool muted);
-  void layerVolume(uint8_t layer, uint8_t volume);
-  void layerArm(uint8_t layer);   // start overwriting this layer on next event
+  void layerMute(int layer, bool muted);
+  void layerVolume(int layer, uint8_t volume);
+  void layerArm(int layer);   // start overwriting this layer on next event
   void layerRearm();
 
   struct LayerStatus {
@@ -67,10 +67,10 @@ public:
   };
 
   struct Status {
-    uint8_t     layerCount;
-    uint8_t     activeLayer;
-    bool        armed;
-    bool        layerArmed;
+    int   layerCount;
+    int   activeLayer;
+    bool  armed;
+    bool  layerArmed;
     std::array<LayerStatus, 10> layers;
  };
 
@@ -84,8 +84,8 @@ public:
 private:
   bool armed;
 
-  uint8_t activeLayer;
-  uint8_t layerCount;
+  int activeLayer;
+  int layerCount;
   bool layerArmed;
   AbsTime armedTime;
 

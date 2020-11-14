@@ -369,7 +369,7 @@ void Loop::keep() {
 
   activeLayer += activeLayer < (layers.size() - 1) ? 1 : 0;
   layerArmed = true;
-  layerCount = std::max<uint8_t>(layerCount, activeLayer + 1);
+  layerCount = std::max(layerCount, activeLayer + 1);
 }
 
 void Loop::arm() {
@@ -390,15 +390,15 @@ void Loop::clear() {
 }
 
 
-void Loop::layerMute(uint8_t layer, bool muted) {
+void Loop::layerMute(int layer, bool muted) {
   if (layer < layers.size()) layers[layer].muted = muted;
 }
 
-void Loop::layerVolume(uint8_t layer, uint8_t volume) {
+void Loop::layerVolume(int layer, uint8_t volume) {
   if (layer < layers.size()) layers[layer].volume = volume;
 }
 
-void Loop::layerArm(uint8_t layer) {
+void Loop::layerArm(int layer) {
   if (layerArmed && activeLayer == layer && walltime < (armedTime + 1000)) {
     // double press of the layer arm control
     layers[activeLayer].clear();
@@ -410,7 +410,7 @@ void Loop::layerArm(uint8_t layer) {
   layerArmed = true;
   armedTime = walltime;
 
-  layerCount = std::max<uint8_t>(layerCount, activeLayer + 1);
+  layerCount = std::max(layerCount, activeLayer + 1);
 }
 
 void Loop::layerRearm() {
