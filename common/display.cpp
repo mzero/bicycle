@@ -80,11 +80,11 @@ namespace {
 
 
   template< typename T >
-  class TextField : public Field {
+  class ValueField : public Field {
   public:
     typedef T value_t;
 
-    TextField(int16_t x, int16_t y, uint16_t w, uint16_t h)
+    ValueField(int16_t x, int16_t y, uint16_t w, uint16_t h)
       : Field(x, y, w, h)
       {}
 
@@ -93,17 +93,14 @@ namespace {
 
     void redraw() {
       drawnValue = getValue();
-
+      // ensure reset clean drawing environment
       resetText();
       smallText();
       display.setCursor(x, y);
       drawValue(drawnValue);
     }
 
-    virtual void drawValue(const value_t& v) const {
-      display.print(v);
-    }
-
+    virtual void drawValue(const value_t& v) const = 0;
     virtual value_t getValue() const = 0;
 
   private:
@@ -111,10 +108,26 @@ namespace {
   };
 
 
-  class LengthField : public TextField<AbsTime> {
+  template< typename T >
+  class TextField : public ValueField<T> {
+  public:
+    typedef T value_t;
+
+    TextField(int16_t x, int16_t y, uint16_t w, uint16_t h)
+      : ValueField<T>(x, y, w, h)
+      {}
+
+  protected:
+    virtual void drawValue(const value_t& v) const {
+      display.print(v);
+    }
+  };
+
+
+  class LengthField : public ValueField<AbsTime> {
   public:
     LengthField(int16_t x, int16_t y, uint16_t w, uint16_t h)
-      : TextField<AbsTime>(x, y, w, h) { }
+      : ValueField<AbsTime>(x, y, w, h) { }
   protected:
     void drawValue(const AbsTime& t) const {
       auto tenths = (t + 50) / 100;
@@ -160,10 +173,10 @@ namespace {
   };
 
 
-  class ArmedField : public TextField<bool> {
+  class ArmedField : public ValueField<bool> {
   public:
     ArmedField(int16_t x, int16_t y, uint16_t w, uint16_t h)
-      : TextField<bool>(x, y, w, h) { }
+      : ValueField<bool>(x, y, w, h) { }
   protected:
     void drawValue(const bool& armed) const {
       if (armed)
