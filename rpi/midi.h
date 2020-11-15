@@ -12,7 +12,7 @@ class Midi {
     void end();
 
     bool send(const MidiEvent&);
-    bool receive(MidiEvent&, AbsTime timeout);
+    bool receive(MidiEvent&, TimeInterval timeout);
 
   private:
     class Impl;

@@ -1,15 +1,32 @@
 #ifndef _INCLUDE_TYPES_H_
 #define _INCLUDE_TYPES_H_
 
+#include <chrono>
 #include <cstdint>
+#include <ratio>
 
 
-typedef uint16_t DeltaTime;
-typedef int32_t AbsTime;
+// TIME
 
-constexpr DeltaTime maxDelta = UINT16_MAX;
-constexpr AbsTime forever = INT32_MAX;
+using NoteDuration = std::chrono::duration<uint16_t, std::milli>;
+  // always positive or zero, okay for the resolution to be low
+  // maximum duration is about 65 seconds
 
+using TimeInterval = std::chrono::duration<int32_t, std::micro>;
+  // interval between events
+  // absolute maximum is about 35 minutes
+
+using WallTime = std::chrono::microseconds;
+  // covers well over 100 years... enough?
+
+
+constexpr NoteDuration minDuration = NoteDuration(1);
+constexpr NoteDuration maxDuration = NoteDuration::max();
+
+constexpr TimeInterval forever = TimeInterval::max();
+
+
+// MIDI
 
 union MidiEvent {
   struct {

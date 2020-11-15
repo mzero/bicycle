@@ -9,9 +9,9 @@ const CellIndex nullIndex = 0xffff;
 
 struct Cell {
 public:
-  MidiEvent   event;
-  DeltaTime   duration;
-  DeltaTime   nextTime;
+  MidiEvent     event;
+  NoteDuration  duration;
+  TimeInterval  nextTime;
 
 private:
   CellIndex   nextCell;
@@ -27,7 +27,7 @@ public:
 
   static void begin();
   static int inUse();
-  
+
 private:
   Cell() { };
 

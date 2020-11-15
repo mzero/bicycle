@@ -27,8 +27,8 @@ namespace {
     virtual void redraw() {
       uint16_t c = foreColor();
 
-      AbsTime spanT = 0;
-      AbsTime keyPos = 0;
+      TimeInterval spanT(0);
+      TimeInterval keyPos(0);
       int keyLayer = -1;
       for (int i = 0; i < currentStatus.layerCount; ++i) {
         auto& l = currentStatus.layers[i];
@@ -39,7 +39,7 @@ namespace {
         }
       }
 
-      if (spanT == 0) return;
+      if (spanT == TimeInterval::zero()) return;
 
       uint16_t px = 0;
 
@@ -51,7 +51,7 @@ namespace {
         display.drawFastVLine(x, ly, 3, c);
         display.drawFastVLine(x+w-1, ly, 3, c);
 
-        px = x + roundingDivide(l.position * w, spanT);
+        px = x + roundingDivide(l.position.count() * w, spanT.count());
 
         display.drawFastVLine(px, ly, 3, c);
       }
@@ -59,14 +59,14 @@ namespace {
         if (i == keyLayer) continue;
 
         auto& l = currentStatus.layers[i];
-        if (l.length == 0) continue;
+        if (l.length == TimeInterval::zero()) continue;
 
-        AbsTime ls = keyPos - l.position;
-        AbsTime ll = l.length;
+        TimeInterval ls = keyPos - l.position;
+        TimeInterval ll = l.length;
 
         int16_t ly = y + 4*i;
-        int16_t lx = x + roundingDivide(ls * w, spanT);
-        int16_t lw = roundingDivide(ll * w, spanT);
+        int16_t lx = x + roundingDivide(ls.count() * w, spanT.count());
+        int16_t lw = roundingDivide(ll.count() * w, spanT.count());
 
         display.drawFastHLine(lx, ly+1, lw, c);
         display.drawFastVLine(lx, ly, 3, c);
@@ -124,17 +124,19 @@ namespace {
   };
 
 
-  class LengthField : public ValueField<AbsTime> {
+  class LengthField : public ValueField<TimeInterval> {
   public:
     LengthField(int16_t x, int16_t y, uint16_t w, uint16_t h)
-      : ValueField<AbsTime>(x, y, w, h) { }
+      : ValueField<TimeInterval>(x, y, w, h) { }
   protected:
-    void drawValue(const AbsTime& t) const {
-      auto tenths = (t + 50) / 100;
+    void drawValue(const TimeInterval& t) const {
+      using Tenths = std::chrono::duration<int, std::deci>;
+
+      auto tenths = std::chrono::duration_cast<Tenths>(t).count();
       display.printf("%2d.%1ds", tenths / 10, tenths % 10);
     }
-    AbsTime getValue() const {
-      AbsTime spanT = 0;
+    TimeInterval getValue() const {
+      TimeInterval spanT(0);
       for (int i = 0; i < currentStatus.layerCount; ++i)
         spanT = std::max(spanT, currentStatus.layers[i].length);
       return spanT;

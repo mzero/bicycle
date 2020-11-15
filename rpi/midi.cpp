@@ -16,7 +16,7 @@ namespace {
       void end();
 
       bool send(const MidiEvent&);
-      bool receive(MidiEvent&, AbsTime timeout);
+      bool receive(MidiEvent&, TimeInterval timeout);
 
     private:
       snd_seq_t *seq = nullptr;
@@ -98,15 +98,15 @@ namespace {
     return true;
   }
 
-  bool AlsaMidi::receive(MidiEvent& m, AbsTime timeout) {
+  bool AlsaMidi::receive(MidiEvent& m, TimeInterval timeout) {
     snd_seq_event_t *ev;
 
     auto q = snd_seq_event_input(seq, &ev);
     if (q == -EAGAIN) {
       // nothing there, try once more...
       if (false && timeout != forever) {
-      	 std::cout << "tNext = " << std::dec << timeout << std::endl;
-	  }
+      	 std::cout << "tNext = " << std::dec << timeout.count() << std::endl;
+	    }
       // int t = (timeout == forever) ? 500 : timeout;
       // std::cout << "polling " << std::dec << npfds << " fds, waiting " << t << std::endl;
       // poll(pfds, npfds, t);
@@ -163,7 +163,7 @@ bool Midi::send(const MidiEvent& ev) {
   return impl ? impl->send(ev) : false;
 }
 
-bool Midi::receive(MidiEvent& ev, AbsTime timeout) {
+bool Midi::receive(MidiEvent& ev, TimeInterval timeout) {
   return impl ? impl->receive(ev, timeout) : false;
 }
 

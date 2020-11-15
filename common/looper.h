@@ -9,10 +9,6 @@
 #include "types.h"
 
 
-const DeltaTime maxEventInterval = 20000;
-  // maximum amount of time spent waiting for a new event
-
-
 typedef void (*EventFunc)(const MidiEvent&);
   // TODO: Needs time somehow? delta? absolute?
 
@@ -22,11 +18,11 @@ public:
   Layer();
   ~Layer();
 
-  AbsTime next() const;
-  AbsTime advance(AbsTime);
+  TimeInterval next() const;
+  TimeInterval advance(TimeInterval);
 
   void addEvent(const MidiEvent&);
-  void keep(AbsTime baseLength = 0);
+  void keep(TimeInterval baseLength = TimeInterval::zero());
   void clear();
 
   bool muted;
@@ -35,10 +31,10 @@ public:
 private:
   Cell* firstCell;
   Cell* recentCell;
-  AbsTime timeSinceRecent;
+  TimeInterval timeSinceRecent;
 
-  AbsTime length;
-  AbsTime position;
+  TimeInterval length;
+  TimeInterval position;
 
   friend class Loop;
 };
@@ -48,7 +44,7 @@ class Loop {
 public:
   Loop();
 
-  AbsTime advance(AbsTime);
+  TimeInterval advance(TimeInterval);
 
   void addEvent(const MidiEvent&);
   void keep();      // arm next layer
@@ -61,9 +57,9 @@ public:
   void layerRearm();
 
   struct LayerStatus {
-    AbsTime     length;
-    AbsTime     position;
-    bool        muted;
+    TimeInterval length;
+    TimeInterval position;
+    bool         muted;
   };
 
   struct Status {
@@ -77,7 +73,7 @@ public:
   Status status() const;
 
   static void begin(EventFunc);
-  static AbsTime setTime(AbsTime);
+  static TimeInterval setTime(WallTime);
 
   static void allOffNow();
 
@@ -87,7 +83,7 @@ private:
   int activeLayer;
   int layerCount;
   bool layerArmed;
-  AbsTime armedTime;
+  WallTime armedTime;
 
   std::vector<Layer> layers;
 };

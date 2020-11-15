@@ -22,7 +22,6 @@ uint32_t millis() {
   const auto now = std::chrono::steady_clock::now();
   const auto dur = now - start;
   const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur);
-    // needs to be an explicit cast for some reason!
   return ms.count();
 }
 

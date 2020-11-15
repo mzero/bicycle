@@ -23,14 +23,20 @@ namespace {
       0u, 127u));
   }
 
-  int syncLength(AbsTime base, AbsTime len, AbsTime maxShorten) {
+  TimeInterval syncLength(
+      TimeInterval base, TimeInterval len, TimeInterval maxShorten) {
     const int limit = 7;
 
-    std::cout << "sync: " << base << " :: " << len << " (" << maxShorten << ")\n";
+    if (base == TimeInterval::zero())
+      return TimeInterval::zero();
 
-    double b = base;
-    double l = len;
-    double x = 0.0 - maxShorten;
+    std::cout << "sync: "
+      << base.count() << " :: " << len.count()
+      << " (" << maxShorten.count() << ")\n";
+
+    double b = base.count();
+    double l = len.count();
+    double x = 0.0 - maxShorten.count();
 
     int nBest = 0;
     int mBest = 0;
@@ -60,35 +66,35 @@ namespace {
 
     if (nBest == 0) {
       std::cout << "    failed to find relationship\n";
-      return 0;
+      return TimeInterval::zero();
     }
 
     int adj = lround(errBest);
     std::cout << "    " << nBest << ":" << mBest << ", adjusting by " << adj << "\n";
-    return adj;
+    return TimeInterval(adj);
   }
 
-  AbsTime walltime = 0;
+  WallTime walltime(0);
 
   EventFunc player;
 
 
   struct AwaitOff {
     Cell* cell;
-    AbsTime start;
+    WallTime start;
   };
 
   std::array<AwaitOff, 128> awaitingOff;
-
-  Cell* pendingOff = nullptr;
 
 
   void finishAwaitingOff(const MidiEvent& ev) {
     auto& ao = awaitingOff[ev.data1];
     if (ao.cell) {
-      AbsTime dur = walltime - ao.start;
-      dur = clamp(dur, 1, static_cast<AbsTime>(maxDelta));
-      ao.cell->duration = static_cast<DeltaTime>(dur);
+      auto dWall = walltime - ao.start;
+      if (dWall > maxDuration) dWall = maxDuration;
+      auto dNote = std::chrono::duration_cast<NoteDuration>(dWall);
+      if (dNote < minDuration) dNote = minDuration;
+      ao.cell->duration = dNote;
       ao.cell = nullptr;
     }
   }
@@ -109,14 +115,19 @@ namespace {
 
   void clearAwatingOff() {
     for (auto& ao : awaitingOff)
-      ao = {nullptr, 0};
+      ao = {nullptr, WallTime::zero()};
   }
 
+
+  Cell* pendingOff = nullptr;
+
+  // Note: The Pending off logic uses Cell::nextTime for the amount of time left
+  // This is because it is higher resolution than duration.
 
   void playCell(const Cell& cell, bool mute, uint8_t volume) {
     if (mute) return;
 
-    if (cell.event.isNoteOn() && cell.duration > 0) {
+    if (cell.event.isNoteOn() && cell.duration >= minDuration) {
       MidiEvent note = cell.event;
       note.data2 = scaleVelocity(note.data2, volume);
       if (note.data2 == 0)
@@ -130,7 +141,7 @@ namespace {
 
       offCell->event = note;
       offCell->event.data2 = 0; // volume 0 makes it a NoteOff
-      offCell->duration = cell.duration;
+      offCell->nextTime = cell.duration;
       offCell->link(pendingOff);
       pendingOff = offCell;
     } else {
@@ -138,13 +149,13 @@ namespace {
     }
   }
 
-  AbsTime playPendingOff(AbsTime dt) {
-    AbsTime nextT = forever;
+  TimeInterval playPendingOff(TimeInterval dt) {
+    TimeInterval nextT = forever;
 
     for (Cell *p = pendingOff, *q = nullptr; p;) {
-      if (dt < p->duration) {
-        p->duration = static_cast<DeltaTime>(p->duration - dt);
-        nextT = std::min(nextT, static_cast<AbsTime>(p->duration));
+      if (dt < p->nextTime) {
+        p->nextTime = p->nextTime - dt;
+        nextT = std::min(nextT, p->nextTime);
         q = p;
         p = p->next();
       } else {
@@ -172,18 +183,18 @@ Layer::Layer()
 Layer::~Layer()
   { clear(); }
 
-AbsTime Layer::next() const {
+TimeInterval Layer::next() const {
   if (!recentCell) return forever;
   if (recentCell->atEnd()) return forever;
   return recentCell->nextTime - timeSinceRecent;
 }
 
-AbsTime Layer::advance(AbsTime dt) {
-  AbsTime nextT = forever;
+TimeInterval Layer::advance(TimeInterval dt) {
+  TimeInterval nextT = forever;
 
   if (recentCell) {
     if (recentCell->atEnd()) {
-      if (dt > maxEventInterval - timeSinceRecent) {
+      if (dt > TimeInterval::max() - timeSinceRecent) {
         clear();
       } else {
         timeSinceRecent += dt;
@@ -199,14 +210,14 @@ AbsTime Layer::advance(AbsTime dt) {
         Cell* nextCell = recentCell->next();
 
         dt -= recentCell->nextTime - timeSinceRecent;
-        timeSinceRecent = 0;
+        timeSinceRecent = TimeInterval::zero();
         recentCell = nextCell;
         playCell(*recentCell, muted, volume);
       }
 
       timeSinceRecent += dt;
 
-      nextT = static_cast<AbsTime>(recentCell->nextTime) - timeSinceRecent;
+      nextT = recentCell->nextTime - timeSinceRecent;
     }
   }
   return nextT;
@@ -227,7 +238,7 @@ void Layer::addEvent(const MidiEvent& ev) {
   Cell* newCell = Cell::alloc();
   if (!newCell) return; // ran out of cells!
   newCell->event = ev;
-  newCell->duration = 0;
+  newCell->duration = NoteDuration::zero();
 
   if (ev.isNoteOn())
     startAwaitingOff(newCell);
@@ -253,38 +264,35 @@ void Layer::addEvent(const MidiEvent& ev) {
     Cell* nextCell = recentCell->next();
     if (nextCell) {
       newCell->link(nextCell);
-      newCell->nextTime =
-        static_cast<DeltaTime>(recentCell->nextTime - timeSinceRecent);
+      newCell->nextTime = recentCell->nextTime - timeSinceRecent;
     }
 
     recentCell->link(newCell);
-    recentCell->nextTime = static_cast<DeltaTime>(timeSinceRecent);
+    recentCell->nextTime = timeSinceRecent;
   } else {
     firstCell = newCell;
     // FIXME: note "the one" here?
   }
 
   recentCell = newCell;
-  timeSinceRecent = 0;
+  timeSinceRecent = TimeInterval::zero();
 }
 
-void Layer::keep(AbsTime baseLength) {
+void Layer::keep(TimeInterval baseLength) {
   if (!firstCell) return;
 
-  AbsTime adj = 0;
-  if (baseLength > 0)
-    adj = syncLength(baseLength, length, timeSinceRecent);
+  TimeInterval adj = syncLength(baseLength, length, timeSinceRecent);
 
   // closing the loop
   recentCell->link(firstCell);
-  recentCell->nextTime = static_cast<DeltaTime>(timeSinceRecent + adj);
+  recentCell->nextTime = timeSinceRecent + adj;
   firstCell = nullptr;
 
   length += adj;
   position = position % length;
 
   // advance into the start of the loop
-  advance(adj < 0 ? -adj : 0);
+  advance(adj < TimeInterval::zero() ? -adj : TimeInterval::zero());
 }
 
 void Layer::clear() {
@@ -302,9 +310,9 @@ void Layer::clear() {
   recentCell = nullptr;
   firstCell = nullptr;
 
-  timeSinceRecent = 0;
-  length = 0;
-  position = 0;
+  timeSinceRecent = TimeInterval::zero();
+  length = TimeInterval::zero();
+  position = TimeInterval::zero();
 
   muted = false;
   volume = 100;
@@ -319,19 +327,19 @@ Loop::Loop()
   }
 
 
-AbsTime Loop::advance(AbsTime dt) {
+TimeInterval Loop::advance(TimeInterval dt) {
   // In theory the offs should be interleaved as we go through the next
   // set of cells to play. BUT, since dt has already elapsed, it is roughly
   // okay to just spit out the NoteOff events first. And anyway, dt is rarely
-  // more than 1.
+  // more than 1ms.
 
-  AbsTime nextT = playPendingOff(dt);
+  TimeInterval nextT = playPendingOff(dt);
 
   for (auto& l : layers)
     nextT = std::min(nextT, l.next());
 
-  while (dt > 0) {
-    AbsTime et = std::min(dt, nextT);
+  while (dt > TimeInterval::zero()) {
+    TimeInterval et = std::min(dt, nextT);
 
     nextT = forever;
     for (auto& l : layers)
@@ -405,7 +413,8 @@ void Loop::layerVolume(int layer, uint8_t volume) {
 }
 
 void Loop::layerArm(int layer) {
-  if (layerArmed && activeLayer == layer && walltime < (armedTime + 1000)) {
+  if (layerArmed && activeLayer == layer
+      && walltime < (armedTime + std::chrono::seconds(1))) {
     // double press of the layer arm control
     layers[activeLayer].clear();
     return;
@@ -438,8 +447,8 @@ Loop::Status Loop::status() const {
       sl.position = l.position;
       sl.muted = l.muted;
     } else {
-      sl.length = 0;
-      sl.position = 0;
+      sl.length = TimeInterval::zero();
+      sl.position = TimeInterval::zero();
       sl.muted = false;
     }
   }
@@ -452,11 +461,17 @@ void Loop::begin(EventFunc p) {
   Cell::begin();
 }
 
-AbsTime Loop::setTime(AbsTime now) {
-  if (now < walltime) return 0;
+TimeInterval Loop::setTime(WallTime now) {
+  static WallTime pending(0);
+
+  if (now < walltime) return TimeInterval::zero();
     // FIXME: Handle rollover of walltime?
-  AbsTime dt = now - walltime;
+
+  pending += now - walltime;
   walltime = now;
+
+  auto dt = std::chrono::duration_cast<TimeInterval>(pending);
+  pending -= dt;
   return dt;
 }
 

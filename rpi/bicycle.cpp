@@ -153,14 +153,15 @@ void teardown() {
 }
 
 void loop() {
-  static uint32_t then = millis();
-  uint32_t now = millis();
+  static const auto clockStart = std::chrono::steady_clock::now();
+  const auto sinceStart = std::chrono::steady_clock::now() - clockStart;
+  const auto sinceStartMillis = std::chrono::duration_cast<std::chrono::milliseconds>(sinceStart);
+  const auto millis = sinceStartMillis.count();
 
-  AbsTime timeout = forever;
-  if (now > then) {
-    AbsTime dt = theLoop.setTime(now);
+  TimeInterval timeout = forever;
+  {
+    TimeInterval dt = theLoop.setTime(std::chrono::duration_cast<WallTime>(sinceStart));
     timeout = theLoop.advance(dt);
-    then = now;
   }
 
   MidiEvent ev;
@@ -168,9 +169,9 @@ void loop() {
     noteEvent(ev);
   }
 
-  // analogUpdate(now);
+  // analogUpdate(millis);
 
   Loop::Status s = theLoop.status();
-  displayUpdate(now, s);
+  displayUpdate(millis, s);
 }
 

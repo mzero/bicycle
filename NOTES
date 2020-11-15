@@ -7,6 +7,9 @@ Bugs
 ----
 [x] when connecting an input:
   ALSA Seq error -2 in midi decode
+[] cells get lost sometimes
+  - perhaps when the same note is played on different layers overlapping?
+  - perhaps when waiting for a note off, but get a note on?
 
 Features
 --------
@@ -36,18 +39,18 @@ Implementation
     table scheme. In general, don't expect to be waiting more than 10 notes
     at a time.
 
-[] higher resolution time unit
+[x] higher resolution time unit
 [] measure processing time
 
-[] display cells in use (?)
+[x] display cells in use (?)
 [] displaying too often
 	[] what is the timing of the display operation?
 
 [] fix hack of start note definition
 	[] ? should be START command? what about duration of trigger?
 
-[] AbsTime & DeltaTime are terrible names
-[] clean up delta times and checking for overflows
+[x] AbsTime & DeltaTime are terrible names
+[x] clean up delta times and checking for overflows
 	- durations on note off
 	- advance big jump
 	- others?
