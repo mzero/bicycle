@@ -1,10 +1,10 @@
 #include "looper.h"
+#include "message.h"
 
 #include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstring>
-#include <iostream>
 
 #include "cell.h"
 
@@ -30,9 +30,10 @@ namespace {
     if (base == TimeInterval::zero())
       return TimeInterval::zero();
 
-    std::cout << "sync: "
+    Log log;
+    log << "layer sync: "
       << base.count() << " :: " << len.count()
-      << " (" << maxShorten.count() << ")\n";
+      << " (" << maxShorten.count() << ") = ";
 
     double b = base.count();
     double l = len.count();
@@ -56,21 +57,22 @@ namespace {
       if (i > 1 && (n >= limit || m >= limit)) continue;
 
       double err = (n * b - m * l) / m;
-      std::cout << "    trying " << n << ":" << m << " gives err " << err << '\n';
       if (err > x && std::abs(err) < std::abs(errBest)) {
         nBest = n;
         mBest = m;
         errBest = err;
       }
     }
-
+    Message msg;
     if (nBest == 0) {
-      std::cout << "    failed to find relationship\n";
+      log << "failed to find relationship";
+      msg << "?:?";
       return TimeInterval::zero();
     }
 
     int adj = lround(errBest);
-    std::cout << "    " << nBest << ":" << mBest << ", adjusting by " << adj << "\n";
+    log << nBest << ":" << mBest << ", adjusting by " << adj;
+    msg << nBest << ":" << mBest;
     return TimeInterval(adj);
   }
 
@@ -123,18 +125,26 @@ namespace {
       }
     }
 
-    float bestBPM = std::chrono::minutes(1) / (basef / bestMN);
-    std::cout << "best estimate: " << bestMN << "beats ("
-      << minMN << "," << maxMN << ") @ " << bestBPM << " bpm\n";
-
-    std::cout << "deltas: ";
-    auto p = firstCell;
-    while (p) {
-      std::cout << p->nextTime.count() << ",";
-      p = p->next();
-      if (p == firstCell) break;
+    {
+      Log log;
+      log << "layer deltas: ";
+      auto p = firstCell;
+      while (p) {
+        log << p->nextTime.count() << ",";
+        p = p->next();
+        if (p == firstCell) break;
+      }
     }
-    std::cout << std::endl;
+
+    {
+      Log log;
+      float bestBPM = std::chrono::minutes(1) / (basef / bestMN);
+      log << "meter: " << bestMN << "beats ("
+        << minMN << "," << maxMN << ") @ " << bestBPM << " bpm";
+
+      Message msg;
+      msg << bestMN << " @ " << static_cast<int>(bestBPM) << " bpm";
+    }
   }
 
   WallTime walltime(0);
