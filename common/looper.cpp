@@ -74,6 +74,69 @@ namespace {
     return TimeInterval(adj);
   }
 
+  float beatError(float x) {
+    float e = 0.0f;
+    for (int i = 0; i < 8; ++i) {
+      x = x - std::trunc(x);
+      e += x >= 0.5f ? (1.0f - x) : x;
+      x = x + x;
+    }
+    return e;
+  }
+
+  void estimateMeter(TimeInterval base, const Cell* firstCell) {
+    constexpr float minBPM = 75; // 85;
+    constexpr float maxBPM = 140; // 2 * minBPM;
+
+    using Seconds = std::chrono::duration<float>;
+    constexpr Seconds maxQnote = std::chrono::minutes(1) / minBPM;
+    constexpr Seconds minQnote = std::chrono::minutes(1) / maxBPM;
+
+    Seconds basef(base);
+
+    int minMN = int(ceilf(basef / maxQnote));
+    int maxMN = int(floorf(basef / minQnote));
+
+    int bestMN = 0;
+    float bestErr = INFINITY;
+
+    for (int mn = minMN; mn <= maxMN; ++mn) {
+      const Seconds qn = basef / mn;
+      const float qnf = qn.count();
+
+      float err = 0.0f;
+      auto p = firstCell;
+      TimeInterval t(0);
+      while (p) {
+        float tf = Seconds(t).count();
+        err += beatError(tf / qnf);
+        if (err > bestErr) break;
+
+        t += p->nextTime;
+        p = p->next();
+        if (p == firstCell) break;
+      }
+
+      if (err < bestErr) {
+        bestMN = mn;
+        bestErr = err;
+      }
+    }
+
+    float bestBPM = std::chrono::minutes(1) / (basef / bestMN);
+    std::cout << "best estimate: " << bestMN << "beats ("
+      << minMN << "," << maxMN << ") @ " << bestBPM << " bpm\n";
+
+    std::cout << "deltas: ";
+    auto p = firstCell;
+    while (p) {
+      std::cout << p->nextTime.count() << ",";
+      p = p->next();
+      if (p == firstCell) break;
+    }
+    std::cout << std::endl;
+  }
+
   WallTime walltime(0);
 
   EventFunc player;
@@ -380,7 +443,9 @@ void Loop::keep() {
   Layer& l = layers[activeLayer];   // TODO: bounds check
 
   l.keep(layers[activeLayer ? 0 : 1].length);
-
+  if (layerCount == 1) {
+    estimateMeter(l.length, l.recentCell);
+  }
   activeLayer += activeLayer < (layers.size() - 1) ? 1 : 0;
   layerArmed = true;
   layerCount = std::max(layerCount, activeLayer + 1);
@@ -478,4 +543,3 @@ TimeInterval Loop::setTime(WallTime now) {
 void Loop::allOffNow() {
   playPendingOff(forever);
 }
-
