@@ -2,17 +2,26 @@
 
 #include <iostream>
 
+#include "version.h"
+
+
 namespace {
+  Log::PersistFunc persistFunc = nullptr;
+
   void log(const std::string& msg) {
     if (msg.empty()) return;
 
     std::cout << msg;
     if (msg.back() != '\n') std::cout << '\n';
-  }
 
+    if (persistFunc) persistFunc(msg);
+  }
 }
 
-void Log::begin() {
+void Log::begin(PersistFunc pf) {
+  persistFunc = pf;
+  log("--- " BUILD_COMMIT " on " BUILD_DATE);
+    // horrible hack of literal string concatenation
 }
 
 void Log::end() {

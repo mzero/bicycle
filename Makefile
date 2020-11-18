@@ -86,6 +86,13 @@ $(BUILD_DIR)/$(TARGET): $(OBJS)
 	| sed -e 's/^.*undefined reference to //' \
 	| sort -u
 
+common/version.h: FORCE
+	@echo '/* Generated file, do not edit. */' > $@_
+	@echo  '#define BUILD_COMMIT "'`git describe --all --long --dirty --always`'"' >> $@_
+	@echo  '#define BUILD_DATE "'`git log -n 1 --format=%ai`'"' >> $@_
+	@cmp $@ $@_ && rm $@_ || mv $@_ $@
+FORCE:
+
 
 
 .PHONY: clean

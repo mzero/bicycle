@@ -1,7 +1,10 @@
 #include <Arduino.h>
 
+#include <fstream>
+
 #include "display.h"
 #include "looper.h"
+#include "message.h"
 #include "midi.h"
 #include "types.h"
 
@@ -132,9 +135,18 @@ void noteEvent(const MidiEvent& ev) {
   theLoop.addEvent(ev);
 }
 
-
+const char* logFilePath = "_bicycle_log";
+std::ofstream logFile;
+void writeLog(const std::string& msg) {
+  if (msg.empty()) return;
+  logFile << msg;
+  if (msg.back() != '\n') logFile << '\n';
+}
 
 void setup() {
+  logFile.open(logFilePath, std::ios_base::app);
+  Log::begin(writeLog);
+
   displaySetup();
 
   Serial.begin(115200);
@@ -150,6 +162,8 @@ void setup() {
 void teardown() {
   Loop::allOffNow();
   displayClear();
+  Log::end();
+  logFile.close();
 }
 
 void loop() {
@@ -174,4 +188,3 @@ void loop() {
   Loop::Status s = theLoop.status();
   displayUpdate(millis, s);
 }
-

@@ -8,7 +8,8 @@ class Log : public std::ostringstream {
     Log() : std::ostringstream() { }
     ~Log();
 
-    static void begin();
+    typedef void (*PersistFunc)(const std::string&);
+    static void begin(PersistFunc = nullptr);
     static void end();
 };
 
