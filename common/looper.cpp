@@ -1,5 +1,4 @@
 #include "looper.h"
-#include "message.h"
 
 #include <algorithm>
 #include <cassert>
@@ -7,6 +6,9 @@
 #include <cstring>
 
 #include "cell.h"
+#include "message.h"
+#include "types.h"
+
 
 #pragma GCC diagnostic error "-Wconversion"
   // this code should be meticulous about conversions
@@ -86,7 +88,7 @@ namespace {
     return e;
   }
 
-  void estimateMeter(TimeInterval base, const Cell* firstCell) {
+  int estimateMeter(TimeInterval base, const Cell* firstCell) {
     constexpr float minBPM = 75; // 85;
     constexpr float maxBPM = 140; // 2 * minBPM;
 
@@ -136,6 +138,9 @@ namespace {
       }
     }
 
+    if (bestMN == 0)
+      bestMN = 1; // should never happen, but just to be safe
+
     {
       Log log;
       float bestBPM = std::chrono::minutes(1) / (basef / bestMN);
@@ -145,6 +150,8 @@ namespace {
       Message msg;
       msg << bestMN << " @ " << static_cast<int>(bestBPM) << " bpm";
     }
+
+    return bestMN;
   }
 
   WallTime walltime(0);
@@ -245,6 +252,77 @@ namespace {
 
     return nextT;
   }
+
+  const MidiEvent clockEvent(0xf8);
+  const MidiEvent startEvent(0xfa);
+  const MidiEvent continueEvent(0xfb);
+  const MidiEvent stopEvent(0xfc);
+
+  class ClockLayer {
+  public:
+    ClockLayer() : running(false) { }
+
+    void set(TimeInterval length_, int beats) {
+      length = length_;
+      clockCount = beats * 24;
+      clock = length / clockCount;
+
+      position = TimeInterval::zero();
+      nextClock = TimeInterval::zero();
+      clockNumber = 0;
+
+      running = true;
+    }
+
+    void clear() {
+      running = false;
+      player(stopEvent);
+    }
+
+    TimeInterval next() const {
+      return running ? nextClock : forever;
+    }
+
+    TimeInterval advance(TimeInterval dt) {
+      if (!running) return forever;
+
+      while (nextClock <= dt) {
+        dt -= nextClock;
+        position = (position + nextClock) % length;
+
+        if (clockNumber == 0) {
+          player(stopEvent);
+          player(startEvent);
+        }
+        player(clockEvent);
+
+        clockNumber += 1;
+        if (clockNumber == clockCount) {
+          clockNumber = 0;
+          nextClock = length - position;
+        } else {
+          nextClock = clock;
+        }
+
+      }
+      nextClock -= dt;
+      position += dt;  // no need to % length, can't roll here!
+      return nextClock;
+    }
+
+  private:
+    bool running;
+
+    TimeInterval length;
+    int clockCount;
+    TimeInterval clock;
+
+    TimeInterval position;
+    TimeInterval nextClock;
+    int clockNumber;
+  };
+
+  ClockLayer clockLayer;
 }
 
 Layer::Layer()
@@ -407,14 +485,14 @@ TimeInterval Loop::advance(TimeInterval dt) {
   // more than 1ms.
 
   TimeInterval nextT = playPendingOff(dt);
-
+  nextT = std::min(nextT, clockLayer.next());
   for (auto& l : layers)
     nextT = std::min(nextT, l.next());
 
   while (dt > TimeInterval::zero()) {
     TimeInterval et = std::min(dt, nextT);
 
-    nextT = forever;
+    nextT = clockLayer.advance(et);
     for (auto& l : layers)
       nextT = std::min(nextT, l.advance(et));
 
@@ -454,7 +532,8 @@ void Loop::keep() {
 
   l.keep(layers[activeLayer ? 0 : 1].length);
   if (layerCount == 1) {
-    estimateMeter(l.length, l.recentCell);
+    auto beats = estimateMeter(l.length, l.recentCell);
+    clockLayer.set(l.length, beats);
   }
   activeLayer += activeLayer < (layers.size() - 1) ? 1 : 0;
   layerArmed = true;
@@ -466,7 +545,7 @@ void Loop::arm() {
 }
 
 void Loop::clear() {
-
+  clockLayer.clear();
   clearAwatingOff();
 
   for (auto& l : layers)
