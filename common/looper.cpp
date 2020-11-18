@@ -476,6 +476,8 @@ void Loop::clear() {
   layerCount = 1;
   activeLayer = 0;
   layerArmed = true;
+
+  Message::clear();
 }
 
 

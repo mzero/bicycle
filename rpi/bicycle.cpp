@@ -81,6 +81,8 @@ void controlEvent(const MidiEvent& ev) {
         case  44:  if (ev.data2) theLoop.arm();         break; // REC
         case  45:  if (ev.data2) theLoop.keep();        break; // PLAY
         case  46:  if (ev.data2) theLoop.clear();       break; // STOP
+        case  47:  if (ev.data2) Message::bad();        break; // REW
+        case  48:  if (ev.data2) Message::good();       break; // FF
         case  49:  if (ev.data2) theLoop.layerRearm();  break; // LOOP
 
       }
@@ -155,8 +157,6 @@ void setup() {
   midi.begin();
 
   theLoop.begin(playEvent);
-
-  Serial.println("Ready!");
 }
 
 void teardown() {

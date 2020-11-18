@@ -12,9 +12,9 @@ Bugs
 Features
 --------
 [x] display last track assesment
-[] record assesments
-	[] log file
-	[] good/bad buttons and logging
+[x] record assesments
+	[x] log file
+	[x] good/bad buttons and logging
 
 [] beat & tempo detection
   [x] BPM and beat estimation

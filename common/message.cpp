@@ -39,17 +39,21 @@ namespace {
 
 Message::~Message() {
   lastMsg = this->str();
+  if (!lastMsg.empty())  lastMsg.insert(0, "  ");
 }
 
+void Message::clear() {
+  lastMsg.clear();
+}
 
 void Message::good() {
   log("good");
-  if (!lastMsg.empty()) lastMsg.front() = 'Y';
+  if (!lastMsg.empty()) lastMsg.front() = '\x0E';
 }
 
 void Message::bad() {
   log("bad");
-  if (!lastMsg.empty()) lastMsg.front() = 'N';
+  if (!lastMsg.empty()) lastMsg.front() = '\x13';
 }
 
 const std::string& Message::lastMessage() {

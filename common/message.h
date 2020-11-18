@@ -19,6 +19,7 @@ class Message : public std::ostringstream {
     Message() : std::ostringstream() { }
     ~Message();
 
+    static void clear();
     static void good();
     static void bad();
 

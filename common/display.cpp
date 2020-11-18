@@ -212,8 +212,8 @@ namespace {
   auto loopField = LoopField(0, 0, 128, 30);
   auto lengthField = LengthField(92, 34, 36, 8);
   auto layerField = LayerField(20, 37, 70, 5);
-  auto armedField = ArmedField(0, 34, 10, 20);
-  auto cellField = CellCountField(92, 50, 36, 8);
+  auto armedField = ArmedField(0, 34, 10, 8);
+  auto cellField = CellCountField(92, 44, 36, 8);
   auto msgField = MessageField(0, 56, 128, 8);
 
   //auto mainPage = Layout({&loopField}, 0);
