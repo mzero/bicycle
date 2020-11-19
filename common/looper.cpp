@@ -447,7 +447,7 @@ void Layer::keep(TimeInterval baseLength) {
 }
 
 void Layer::clear() {
-  Cell* start = recentCell;
+  Cell* start = firstCell ? firstCell : recentCell;
 
   Cell* curr = start;
   while (curr) {

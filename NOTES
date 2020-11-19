@@ -5,7 +5,7 @@ Bicycle To Do
 
 Bugs
 ----
-[] cells get lost sometimes
+[x] cells get lost sometimes
   - perhaps when the same note is played on different layers overlapping?
   - perhaps when waiting for a note off, but get a note on?
 
