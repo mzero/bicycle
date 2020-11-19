@@ -97,7 +97,7 @@ void noteEvent(const MidiEvent& ev) {
     return;
   }
 
-  if (ch == 0x01) {
+  if (ch == 0x09) {
     if ((ev.status & 0xf0) == 0x90) {
       switch (ev.data1) {
         case noteUpperLeft:   theLoop.keep(); break;
@@ -115,8 +115,20 @@ void noteEvent(const MidiEvent& ev) {
 
     case 0xb0: // CC
       switch (ev.data1) {
-        case 64:  if (ev.data2) theLoop.keep();   return;
+        // Launchpad Pro side buttons
+        case 10:  if (ev.data2) theLoop.keep();         return;
+        case 20:  if (ev.data2) theLoop.layerRearm();   return;
+        case 30:  if (ev.data2) Message::bad();         return;
+        case 40:  if (ev.data2) Message::good();        return;
+        case 50:  if (ev.data2) theLoop.arm();          return;
+        case 60:  if (ev.data2) theLoop.clear();        return;
+
+        // other controls
+        case 64:  if (ev.data2) theLoop.keep();         return;
           // treat the sustain pedal as the keep function
+
+        default:
+          ; // all other CCs get recorded into the loop
       }
       break;
 

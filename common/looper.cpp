@@ -21,8 +21,10 @@ namespace {
 
   inline uint8_t scaleVelocity(uint8_t vel, uint8_t vol) {
     return static_cast<uint8_t>(clamp(
-      static_cast<uint32_t>(vel) * static_cast<uint32_t>(vol) / 100,
+      static_cast<uint32_t>(vel) * static_cast<uint32_t>(vol) / 89,
       0u, 127u));
+    // why 89? well... it feels about right...
+    // and it is a point on the launchpad pro's grid faders
   }
 
   TimeInterval syncLength(
