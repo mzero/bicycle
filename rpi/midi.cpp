@@ -120,6 +120,7 @@ namespace {
     auto n = snd_midi_event_decode(mev, m.bytes, sizeof(m.bytes), ev);
     // snd_seq_seq_free_event(ev);    // no longer needed in modern ALSA
     if (n == -ENOENT) return false;   // some other port event (like SUBSCRIBE)
+    if (n == -ENOMEM) return false;   // sysex messages, don't fit in 3 bytes
     if (errCheck(n, "midi decode")) return false;
 
     return true;
