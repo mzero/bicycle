@@ -48,7 +48,7 @@ endef
 $(eval $(call build_objects,\
 	rpi,\
 	rpi,\
-	bicycle.cpp midi.cpp))
+	bicycle.cpp configuration.cpp midi.cpp))
 
 $(eval $(call build_objects,\
 	common,\

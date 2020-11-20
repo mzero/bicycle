@@ -2,27 +2,30 @@
 Bicycle To Do
 =============
 
+On Deck
+-------
+[] awaiting off table needs to be by note & channel
+  - that's too big to be reasonable - so will need to do some kind of hashed
+    table scheme. In general, don't expect to be waiting more than 10 notes
+    at a time.
+
+[] configuration
+
+[] measure processing time
+[] timed polling of ALSA
+
+[] odd immediate loop start with launchpad pro on program start
+	- must be some odd ALSA message, or some unexpected MIDI
+
 
 Bugs
 ----
-[x] cells get lost sometimes
-  - perhaps when the same note is played on different layers overlapping?
-  - perhaps when waiting for a note off, but get a note on?
-
 [] handle failed beat estimates better
 	- don't generate MIDI clock in these cases
+	[] there is a divide by zero in there somewhere
 
 Features
 --------
-[x] display last track assesment
-[x] record assesments
-	[x] log file
-	[x] good/bad buttons and logging
-
-[x] beat & tempo detection
-  [x] BPM and beat estimation
-  [x] MIDI clock generation
-
 [] feedback to controller's buttons for mute and arm
 
 [] MIDI channel shift (?)
@@ -37,33 +40,20 @@ Features
 [] visual representation of recorded notes (? probably not really a good idea)
 [] more than 10 layers?
   [] would need heap algo. for sorting next event
-
+[] double tap clear to get quiet all now
+	- finishes all notes immediately
 
 Implementation
 --------------
-[] awaiting off table needs to be by note & channel
-  - that's too big to be reasonable - so will need to do some kind of hashed
-    table scheme. In general, don't expect to be waiting more than 10 notes
-    at a time.
-
-[] measure processing time
-
 [] displaying too often
 	[] what is the timing of the display operation?
-
-[] fix hack of start note definition
-	[] ? should be START command? what about duration of trigger?
 
 
 
 Other Ideas
 -----------
-
-
 [] Abelton Link (?)
-
 [] layer range controls
-
 [] layer fixes
 	[] when armed, layers overwrite, but when you hit keep, it moves
 		to next layer, and may leave remnants if you don't play a whole
