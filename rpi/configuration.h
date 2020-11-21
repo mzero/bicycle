@@ -1,6 +1,7 @@
 #ifndef _INCLUDE_CONFIGURATION_H_
 #define _INCLUDE_CONFIGURATION_H_
 
+#include "args.h"
 #include "types.h"
 
 enum class Action : char {
@@ -30,7 +31,7 @@ struct Command {
 
 class Configuration {
 public:
-    static void begin();
+    static bool begin();
     static Command command(const MidiEvent&);
 };
 

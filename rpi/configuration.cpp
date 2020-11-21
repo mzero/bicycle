@@ -238,27 +238,33 @@ namespace {
     applyMapping(ac, ec);
   }
 
-  void parseFile(std::istream& input) {
+  bool parseFile(std::istream& input) {
     int lineNo = 1;
+    bool good = true;
     for (std::string line; std::getline(input, line); ++lineNo) {
       try {
         parseLine(line);
       }
       catch (Parse& p) {
         std::cerr << "configuration line " << lineNo << " error: " << p << "\n";
+        good = false;
       }
     }
+    return good;
   }
-
-  const char* configFilePath = "bicycle.config";
 }
 
-void Configuration::begin() {
-  std::ifstream configFile(configFilePath);
+bool Configuration::begin() {
+  bool good = false;
+  std::ifstream configFile(Args::configFilePath);
   if (configFile)
-    parseFile(configFile);
+    good = parseFile(configFile);
   else
-    std::cerr << "Couldn't read configuration file: " << configFilePath << "\n";
+    std::cerr << "Couldn't read configuration file: " <<  Args::configFilePath << "\n";
+
+  if (good && Args::configCheckOnly)
+    std::cerr << "Configuration file is valid.\n";
+  return good;
 }
 
 Command Configuration::command(const MidiEvent& ev) {

@@ -57,7 +57,11 @@
 			"typeinfo": "cpp",
 			"bitset": "cpp",
 			"map": "cpp",
-			"regex": "cpp"
+			"regex": "cpp",
+			"codecvt": "cpp",
+			"filesystem": "cpp",
+			"set": "cpp",
+			"string_view": "cpp"
 		},
 		"C_Cpp.default.cppStandard": "c++14",
 		"C_Cpp.default.includePath": [

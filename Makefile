@@ -48,7 +48,7 @@ endef
 $(eval $(call build_objects,\
 	rpi,\
 	rpi,\
-	bicycle.cpp configuration.cpp midi.cpp))
+	args.cpp bicycle.cpp configuration.cpp midi.cpp))
 
 $(eval $(call build_objects,\
 	common,\
@@ -73,7 +73,7 @@ $(eval $(call build_objects,\
 $(eval $(call build_objects,\
 	lard,\
 	lard,\
-	main.cpp mock.cpp Wire.cpp))
+	mock.cpp Wire.cpp))
 
 
 LIBS := stdc++ m asound

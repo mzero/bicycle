@@ -1,7 +1,12 @@
 #include <Arduino.h>
 
+#include <csignal>
+#include <cstdlib>
 #include <fstream>
+#include <iostream>
+#include <string>
 
+#include "args.h"
 #include "configuration.h"
 #include "display.h"
 #include "looper.h"
@@ -59,7 +64,8 @@ void noteEvent(const MidiEvent& ev) {
   theLoop.addEvent(ev);
 }
 
-const char* logFilePath = "_bicycle_log";
+
+
 std::ofstream logFile;
 void writeLog(const std::string& msg) {
   if (msg.empty()) return;
@@ -68,10 +74,11 @@ void writeLog(const std::string& msg) {
 }
 
 void setup() {
-  logFile.open(logFilePath, std::ios_base::app);
-  Log::begin(writeLog);
+  if (!Configuration::begin() || Args::configCheckOnly)
+    return;
 
-  Configuration::begin();
+  logFile.open(Args::logFilePath, std::ios_base::app);
+  Log::begin(writeLog);
 
   displaySetup();
   Serial.begin(115200);
@@ -110,3 +117,26 @@ void loop() {
   Loop::Status s = theLoop.status();
   displayUpdate(millis, s);
 }
+
+
+void finish(int sig) {
+  std::cerr << std::endl << std::endl
+    << "** Caught signal " << std::dec << sig << ", exiting." << std::endl;
+  teardown();
+  exit(-1);
+}
+
+int main(int argc, char *argv[]) {
+  signal(SIGABRT, finish);
+  signal(SIGINT, finish);
+  signal(SIGTERM, finish);
+
+  if (!Args::parse(argc, argv))
+    return Args::exitCode;
+
+  setup();
+  if (!Args::configCheckOnly)
+    while (true) loop();
+  return 0;
+}
+
