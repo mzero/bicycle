@@ -23,6 +23,9 @@
 
 <event> ::= ("ch" <number>)? ("note" | "cc") "" <number> ('.' '.' <number>)?
 
+- For testing purposes, a comment with the word FAIL will invert response:
+  if the line fails to parse, it is silently ignored, and if it does parse
+  it is reported as an error.
 */
 
 namespace {
@@ -209,12 +212,8 @@ namespace {
     return { status, chStart, chEnd, numStart, numEnd };
   }
 
-  void parseLine(std::string line) {
+  void parseRule(std::string line) {
     std::smatch m;
-
-    static const std::regex decomment("([^#]*)#.*");
-    if (std::regex_match(line, m, decomment))
-      line = m.str(1); // replace line with non-comment part
 
     static const std::regex trimWhitespace("\\s*(.*?)\\s*");
     if (std::regex_match(line, m, trimWhitespace))
@@ -236,6 +235,29 @@ namespace {
     EventClause ec = parseEvent(eventStr);
 
     applyMapping(ac, ec);
+  }
+
+  void parseLine(std::string line) {
+    std::smatch m;
+
+    bool expect_failure = false;
+
+    static const std::regex decomment("([^#]*)#(.*)");
+    if (std::regex_match(line, m, decomment)) {
+      line = m.str(1); // replace line with non-comment part
+      expect_failure = m.str(2).find("FAIL") != std::string::npos;
+    }
+
+    try {
+      parseRule(line);
+    }
+    catch (Parse& p) {
+      if (expect_failure) return;
+      throw;
+    }
+
+    if (expect_failure)
+      throw Parse(Error() << "was not expected to parse");
   }
 
   bool parseFile(std::istream& input) {

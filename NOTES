@@ -45,10 +45,11 @@ Implementation
 [] displaying too often
 	[] what is the timing of the display operation?
 
-[] command line args
-	[] configuration file args
-	[] test only mode
-	[] unit test annotations in test config file
+[x] command line args
+	[x] configuration file args
+	[x] test only mode
+	[x] unit test annotations in test config file
+
 
 
 Other Ideas
