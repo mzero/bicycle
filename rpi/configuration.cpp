@@ -1,80 +1,264 @@
 #include "configuration.h"
 
+#include <fstream>
+#include <iostream>
+#include <regex>
+#include <sstream>
+#include <string>
+
 #include "eventmap.h"
 
+
+/* Configurations
+
+- A configuration file is a collection of mapping lines
+- On each line '#' and following characaters are removed
+- Whitespace is ignored between double qutoed tokens
+
+<mapping> ::= <action> ":" <event>?
+<action> ::=
+ "ignore" | "arm" <layer>? | "clear" | "keep" | "rearm" | "good" | "bad"
+  | "mute" <layer> | "volume" <layer>
+<layer> ::= '[' <number> ('.' '.' <number>)? ']'
+
+<event> ::= ("ch" <number>)? ("note" | "cc") "" <number> ('.' '.' <number>)?
+
+*/
+
 namespace {
-    EventMap<Command> noteMap(Command(Action::none));
-    EventMap<Command> ccMap(Command(Action::none));
+
+  template<class S>
+  S& operator<<(S& s, Action a) {
+    switch (a) {
+      case Action::none:        return s << "none";
+      case Action::ignore:      return s << "ignore";
+
+      case Action::arm:         return s << "arm";
+      case Action::clear:       return s << "clear";
+      case Action::keep:        return s << "keep";
+      case Action::rearm:       return s << "rearm";
+      case Action::good:        return s << "good";
+      case Action::bad:         return s << "bad";
+
+      case Action::layerArm:    return s << "layerArm";
+      case Action::layerMute:   return s << "layerMute";
+      case Action::layerVolume: return s << "layerVolume";
+      default:                  return s << "???";
+    }
+  }
+
+
+  EventMap<Command> noteMap(Command(Action::none));
+  EventMap<Command> ccMap(Command(Action::none));
+
+  struct ActionClause {
+    Action action;
+    int layerStart;
+    int layerEnd;
+  };
+
+  struct EventClause {
+    uint8_t status;
+    int chStart;
+    int chEnd;
+    int numStart;
+    int numEnd;
+  };
+
+  void applyMapping(const ActionClause& ac, const EventClause& ec) {
+    // Note: Users spec layers and channel from 1, not 0
+    //  note and cc numbers, however, _are_ from 0
+
+    if (ac.layerStart == ac.layerEnd) {
+      Command cmd(ac.action, ac.layerStart - 1);
+      for (int ch = ec.chStart; ch <= ec.chEnd; ++ch)
+        for (int num = ec.numStart; num <= ec.numEnd; ++num) {
+          if (ec.status == 0x90)
+            noteMap.set(ch - 1, num, cmd);
+          else
+            ccMap.set(ch - 1, num, cmd);
+        }
+    } else {
+      int nLayers = ac.layerEnd - ac.layerStart + 1;
+      int nNums = ec.numEnd - ec.numStart + 1;
+      int n = std::min(nLayers, nNums);
+      for (int offset = 0; offset < n; ++offset) {
+        Command cmd(ac.action, ac.layerStart + offset -1);
+        for (int ch = ec.chStart; ch <= ec.chEnd; ++ch) {
+          if (ec.status == 0x90)
+            noteMap.set(ch - 1, ec.numStart + offset, cmd);
+          else
+            ccMap.set(ch - 1, ec.numStart + offset, cmd);
+        }
+      }
+    }
+  }
+
+  class Error : public std::ostringstream {
+    public:
+      Error() : std::ostringstream() { }
+
+    template<typename T>
+    Error& operator<<(T t) {
+      static_cast<std::ostringstream&>(*this) << t;
+      return *this;
+    }
+  };
+
+  class Parse : public std::string {
+    public:
+      Parse(Error& e) : std::string(e.str()) { }
+  };
+
+  ActionClause parseAction(const std::string& actionStr) {
+    std::smatch m;
+
+    static const std::regex actionRE(
+      "(ignore|arm|clear|keep|rearm|good|bad|mute|volume)"
+      "\\s*(?:\\[(\\d+)(?:\\.\\.(\\d+))?\\])?");
+    if (!std::regex_match(actionStr, m, actionRE))
+      throw Parse(Error() << "malformed action '" << actionStr << "'");
+
+    std::string actionVerb = m.str(1);
+    std::string layer1Str = m.str(2);
+    std::string layer2Str = m.str(3);
+
+    Action action = Action::none;
+    if      (actionVerb == "ignore")    action = Action::ignore;
+    else if (actionVerb == "arm")       action = Action::arm;
+    else if (actionVerb == "clear")     action = Action::clear;
+    else if (actionVerb == "keep")      action = Action::keep;
+    else if (actionVerb == "rearm")     action = Action::rearm;
+    else if (actionVerb == "good")      action = Action::good;
+    else if (actionVerb == "bad")       action = Action::bad;
+    else if (actionVerb == "mute")      action = Action::layerMute;
+    else if (actionVerb == "volume")    action = Action::layerVolume;
+    else
+      throw Parse(Error() << "unrecognized action '" << actionVerb);
+
+    if (action == Action::arm && !layer1Str.empty())
+      action = Action::layerArm;
+
+    int layer1 = 0;
+    int layer2 = 0;
+    switch (action) {
+      case Action::layerArm:
+      case Action::layerMute:
+      case Action::layerVolume:
+        if (layer1Str.empty())
+          throw Parse(Error() << "layer number is missing");
+
+        layer1 = std::stoi(layer1Str);
+        if (layer1 < 1 || 100 < layer1)
+          throw Parse(Error() << "layer " << layer1 << " out of range");
+
+        layer2 = layer2Str.empty() ? layer1 : std::stoi(layer2Str);
+        if (layer2 < layer1 || 100 < layer2)
+          throw Parse(Error() << "layer " << layer2 << " out of range");
+
+        break;
+
+      default:
+        if (!layer1Str.empty())
+          throw Parse(Error() << "unexpected layer number");
+    }
+
+    return { action, layer1, layer2 };
+  }
+
+  EventClause parseEvent(const std::string& eventStr_) {
+    std::string eventStr = eventStr_;
+    std::smatch m;
+
+    int chStart = 1;
+    int chEnd = 16;
+
+    static const std::regex channelRE("ch\\s*(\\d+)\\s+(.*)");
+    if (std::regex_match(eventStr, m, channelRE)) {
+      int ch = std::stoi(m.str(1));
+      eventStr = m.str(2);
+
+      if (ch < 1 || 16 < ch)
+        throw Parse(Error() <<  "channel number " << ch << " out of range");
+
+      chStart = chEnd = ch;
+    }
+
+    static const std::regex eventRE("(note|cc)\\s+(\\d+)(?:\\.\\.(\\d+))?");
+    if (!std::regex_match(eventStr, m, eventRE))
+      throw Parse(Error() << "malformed event '" << eventStr << "'");
+
+    std::string statusStr = m.str(1);
+    std::string num1Str = m.str(2);
+    std::string num2Str = m.str(3);
+
+    uint8_t status;
+    if (statusStr == "note")      status = 0x90;
+    else if (statusStr == "cc")   status = 0xb0;
+    else
+      throw Parse(Error() << "unrecognized event type '" << statusStr);
+
+    int numStart = std::stoi(num1Str);
+    if (numStart < 0 || 127 < numStart)
+      throw Parse(Error() << numStart << " out of range");
+
+    int numEnd = num2Str.empty() ? numStart : std::stoi(num2Str);
+    if (numEnd < numStart || 127 < numEnd)
+      throw Parse(Error() << numEnd << " out of range");
+
+    return { status, chStart, chEnd, numStart, numEnd };
+  }
+
+  void parseLine(std::string line) {
+    std::smatch m;
+
+    static const std::regex decomment("([^#]*)#.*");
+    if (std::regex_match(line, m, decomment))
+      line = m.str(1); // replace line with non-comment part
+
+    static const std::regex trimWhitespace("\\s*(.*?)\\s*");
+    if (std::regex_match(line, m, trimWhitespace))
+      line = m.str(1);  // remove leading and trailing whitespace
+
+    if (line.empty()) return;
+
+    static const std::regex splitActionAndEvent("([^:]*?)\\s*:\\s*(.*)");
+    if (!std::regex_match(line, m, splitActionAndEvent))
+      throw Parse(Error() << "bad format, missing ':'");
+
+    std::string actionStr = m.str(1);
+    std::string eventStr = m.str(2);
+
+    ActionClause ac = parseAction(actionStr);
+    if (eventStr.empty())
+      return;
+
+    EventClause ec = parseEvent(eventStr);
+
+    applyMapping(ac, ec);
+  }
+
+  void parseFile(std::istream& input) {
+    int lineNo = 1;
+    for (std::string line; std::getline(input, line); ++lineNo) {
+      try {
+        parseLine(line);
+      }
+      catch (Parse& p) {
+        std::cerr << "configuration line " << lineNo << " error: " << p << "\n";
+      }
+    }
+  }
+
+  const char* configFilePath = "bicycle.config";
 }
 
 void Configuration::begin() {
-
-    // Ignore everything on the "control" channel unless otherwise set
-
-    for (int i = 0; i < 128; ++i) {
-      ccMap.set(15, i, Command(Action::ignore));
-      noteMap.set(15, i, Command(Action::ignore));
-    }
-
-    // Mapping for nanoKONTROL & Launchpad Pro MK3 w/custom layout
-
-    ccMap.set(15,  2, Command(Action::layerVolume, 0));
-    ccMap.set(15,  3, Command(Action::layerVolume, 1));
-    ccMap.set(15,  4, Command(Action::layerVolume, 2));
-    ccMap.set(15,  5, Command(Action::layerVolume, 3));
-    ccMap.set(15,  6, Command(Action::layerVolume, 4));
-    ccMap.set(15,  8, Command(Action::layerVolume, 5));
-    ccMap.set(15,  9, Command(Action::layerVolume, 6));
-    ccMap.set(15, 11, Command(Action::layerVolume, 7));
-    ccMap.set(15, 12, Command(Action::layerVolume, 8));
-          // yes, CCs 7, 10, & 11 are skipped
-
-    ccMap.set(15, 23, Command(Action::layerMute, 0));
-    ccMap.set(15, 24, Command(Action::layerMute, 1));
-    ccMap.set(15, 25, Command(Action::layerMute, 2));
-    ccMap.set(15, 26, Command(Action::layerMute, 3));
-    ccMap.set(15, 27, Command(Action::layerMute, 4));
-    ccMap.set(15, 28, Command(Action::layerMute, 5));
-    ccMap.set(15, 29, Command(Action::layerMute, 6));
-    ccMap.set(15, 30, Command(Action::layerMute, 7));
-    ccMap.set(15, 31, Command(Action::layerMute, 8));
-
-    ccMap.set(15, 33, Command(Action::layerArm, 0));
-    ccMap.set(15, 34, Command(Action::layerArm, 1));
-    ccMap.set(15, 35, Command(Action::layerArm, 2));
-    ccMap.set(15, 36, Command(Action::layerArm, 3));
-    ccMap.set(15, 37, Command(Action::layerArm, 4));
-    ccMap.set(15, 38, Command(Action::layerArm, 5));
-    ccMap.set(15, 39, Command(Action::layerArm, 6));
-    ccMap.set(15, 40, Command(Action::layerArm, 7));
-    ccMap.set(15, 41, Command(Action::layerArm, 8));
-
-    ccMap.set(15, 44, Command(Action::arm));    // REC
-    ccMap.set(15, 45, Command(Action::keep));   // PLAY
-    ccMap.set(15, 46, Command(Action::clear));  // STOP
-    ccMap.set(15, 47, Command(Action::bad));    // REW
-    ccMap.set(15, 48, Command(Action::good));   // FF
-    ccMap.set(15, 49, Command(Action::rearm));  // LOOP
-
-    // Mapping for Boppad
-
-    noteMap.set(9, 48, Command(Action::keep));  // upper left
-
-    // Mapping for LaunchPad Pro MK3 in Note mode
-    //  -- these are the side buttons, which come on the :2 port
-
-    // left side, bottom upward
-    ccMap.set(0, 10, Command(Action::keep));
-    ccMap.set(0, 20, Command(Action::rearm));
-    ccMap.set(0, 30, Command(Action::bad));
-    ccMap.set(0, 40, Command(Action::good));
-    ccMap.set(0, 50, Command(Action::arm));
-    ccMap.set(0, 60, Command(Action::clear));
-
-    // General input controllers
-
-    ccMap.setAllChannels(64, Command(Action::keep));
-        // treat sustain pedal as the keep function
+  std::ifstream configFile(configFilePath);
+  if (configFile)
+    parseFile(configFile);
+  else
+    std::cerr << "Couldn't read configuration file: " << configFilePath << "\n";
 }
 
 Command Configuration::command(const MidiEvent& ev) {
@@ -84,4 +268,3 @@ Command Configuration::command(const MidiEvent& ev) {
     default:      return Command(Action::none);
   }
 }
-

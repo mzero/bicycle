@@ -9,14 +9,11 @@ On Deck
     table scheme. In general, don't expect to be waiting more than 10 notes
     at a time.
 
-[] configuration
-
 [] measure processing time
 [] timed polling of ALSA
 
 [] odd immediate loop start with launchpad pro on program start
 	- must be some odd ALSA message, or some unexpected MIDI
-
 
 Bugs
 ----
@@ -48,6 +45,10 @@ Implementation
 [] displaying too often
 	[] what is the timing of the display operation?
 
+[] command line args
+	[] configuration file args
+	[] test only mode
+	[] unit test annotations in test config file
 
 
 Other Ideas
@@ -79,7 +80,7 @@ Other Ideas
 
 [] async the loops if desired
 
-
+[] handling control CCs that are momentary vs. toggle
 
 
 HW Notes

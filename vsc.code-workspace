@@ -54,7 +54,10 @@
 			"streambuf": "cpp",
 			"thread": "cpp",
 			"cinttypes": "cpp",
-			"typeinfo": "cpp"
+			"typeinfo": "cpp",
+			"bitset": "cpp",
+			"map": "cpp",
+			"regex": "cpp"
 		},
 		"C_Cpp.default.cppStandard": "c++14",
 		"C_Cpp.default.includePath": [
