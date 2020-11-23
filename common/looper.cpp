@@ -431,8 +431,9 @@ void Layer::addEvent(const MidiEvent& ev) {
   timeSinceRecent = TimeInterval::zero();
 }
 
-void Layer::keep(TimeInterval baseLength) {
-  if (!firstCell) return;
+bool Layer::keep(TimeInterval baseLength) {
+  if (!firstCell) return false;
+  if (!recentCell) return false;
 
   TimeInterval adj = syncLength(baseLength, length, timeSinceRecent);
 
@@ -446,6 +447,7 @@ void Layer::keep(TimeInterval baseLength) {
 
   // advance into the start of the loop
   advance(adj < TimeInterval::zero() ? -adj : TimeInterval::zero());
+  return true;
 }
 
 void Layer::clear() {
@@ -532,7 +534,9 @@ void Loop::addEvent(const MidiEvent& ev) {
 void Loop::keep() {
   Layer& l = layers[activeLayer];   // TODO: bounds check
 
-  l.keep(layers[activeLayer ? 0 : 1].length);
+  if (!l.keep(layers[activeLayer ? 0 : 1].length))
+    return;
+
   if (layerCount == 1) {
     auto beats = estimateMeter(l.length, l.recentCell);
     clockLayer.set(l.length, beats);

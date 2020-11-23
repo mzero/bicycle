@@ -22,7 +22,7 @@ public:
   TimeInterval advance(TimeInterval);
 
   void addEvent(const MidiEvent&);
-  void keep(TimeInterval baseLength = TimeInterval::zero());
+  bool keep(TimeInterval baseLength = TimeInterval::zero());
   void clear();
 
   bool muted;

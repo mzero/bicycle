@@ -15,6 +15,9 @@ On Deck
 [] odd immediate loop start with launchpad pro on program start
 	- must be some odd ALSA message, or some unexpected MIDI
 
+[x] hitting keep on first layer with no notes causes divide by zero error
+
+
 Bugs
 ----
 [] handle failed beat estimates better
