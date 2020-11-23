@@ -97,20 +97,16 @@ namespace {
     }
   }
 
-  class Error : public std::ostringstream {
-    public:
-      Error() : std::ostringstream() { }
+  using Error = std::ostringstream;
 
-    template<typename T>
-    Error& operator<<(T t) {
-      static_cast<std::ostringstream&>(*this) << t;
-      return *this;
-    }
-  };
+  std::string errormsg(std::ostream& o) {
+    auto e = dynamic_cast<Error*>(&o);
+    return e ? e->str() : "parse error";
+  }
 
   class Parse : public std::string {
     public:
-      Parse(Error& e) : std::string(e.str()) { }
+      Parse(std::ostream& o) : std::string(errormsg(o)) { }
   };
 
   ActionClause parseAction(const std::string& actionStr) {
