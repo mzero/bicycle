@@ -10,7 +10,7 @@
 
 #include "args.h"
 #include "configuration.h"
-#include "display.h"
+#include "displaythread.h"
 #include "looper.h"
 #include "message.h"
 #include "midi.h"
@@ -82,7 +82,7 @@ void setup() {
   logFile.open(Args::logFilePath, std::ios_base::app);
   Log::begin(writeLog);
 
-  displaySetup();
+  DisplayThread::start();
   Serial.begin(115200);
   // while (!Serial);
 
@@ -93,10 +93,11 @@ void setup() {
 
 void teardown() {
   Loop::allOffNow();
-  displayClear();
+  DisplayThread::end();
   Log::end();
   logFile.close();
 }
+
 
 void loop() {
   static const auto clockStart = std::chrono::steady_clock::now();
@@ -113,38 +114,18 @@ void loop() {
   }
   if (received) return; // go 'round the loop again!
 
-  static auto nextDisplayUpdate =
-    std::chrono::steady_clock::duration::zero();
-
-  if (sinceStart >= nextDisplayUpdate) {
-    auto millisSinceStart =
-      std::chrono::duration_cast<std::chrono::milliseconds>(sinceStart).count();
-
+  if (DisplayThread::readyForUpdate()) {
     Loop::Status s = theLoop.status();
-    displayUpdate(millisSinceStart, s);
-
-    const static auto displayRefresh = std::chrono::milliseconds(200);
-      // The display taks about 18ms to update. If we update too often, then
-      // MIDI responsiveness will suffer. If too slow, the display is choppy.
-
-    nextDisplayUpdate = sinceStart + displayRefresh;
-    return; // go 'round the loop again
-  }
-  else {
-    timeout = std::min(timeout,
-      std::chrono::duration_cast<TimeInterval>(nextDisplayUpdate - sinceStart));
+    DisplayThread::update(s);
   }
 
-  // no display, no events... poll for input
   midi.poll(timeout);
 }
 
+bool timeToExit = false;
 
 void finish(int sig) {
-  std::cerr << std::endl << std::endl
-    << "** Caught signal " << std::dec << sig << ", exiting." << std::endl;
-  teardown();
-  exit(-1);
+  timeToExit = 1;
 }
 
 int main(int argc, char *argv[]) {
@@ -157,7 +138,14 @@ int main(int argc, char *argv[]) {
 
   setup();
   if (!Args::configCheckOnly)
-    while (true) loop();
+    while (!timeToExit) loop();
+
+  teardown();
+
+  std::cout << "\n\n";
+    // since this only exits via a signal, it is nice to print out some
+    // newlines so that the user's prompt is at the left margin.
+
   return 0;
 }
 
