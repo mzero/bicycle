@@ -14,7 +14,7 @@ CPPFLAGS += -MMD -MP
 CPPFLAGS += -DRPI -DARDUINO=100
 CPPFLAGS += -fdata-sections -ffunction-sections
 CPPFLAGS += -O2
-
+//CPPFLAGS += -ggdb
 
 MKDIR_P ?= mkdir -p
 
