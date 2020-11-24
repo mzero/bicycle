@@ -233,6 +233,13 @@ namespace {
     }
   }
 
+  TimeInterval nextPendingOff() {
+    TimeInterval nextT = forever;
+    for (Cell *p = pendingOff; p; p = p->next())
+      nextT = std::min(nextT, p->nextTime);
+    return nextT;
+  }
+
   TimeInterval playPendingOff(TimeInterval dt) {
     TimeInterval nextT = forever;
 
@@ -488,12 +495,7 @@ Loop::Loop()
 
 
 TimeInterval Loop::advance(TimeInterval dt) {
-  // In theory the offs should be interleaved as we go through the next
-  // set of cells to play. BUT, since dt has already elapsed, it is roughly
-  // okay to just spit out the NoteOff events first. And anyway, dt is rarely
-  // more than 1ms.
-
-  TimeInterval nextT = playPendingOff(dt);
+  TimeInterval nextT = nextPendingOff();
   nextT = std::min(nextT, clockLayer.next());
   for (auto& l : layers)
     nextT = std::min(nextT, l.next());
@@ -501,7 +503,8 @@ TimeInterval Loop::advance(TimeInterval dt) {
   while (dt > TimeInterval::zero()) {
     TimeInterval et = std::min(dt, nextT);
 
-    nextT = clockLayer.advance(et);
+    nextT = playPendingOff(et);
+    nextT = std::min(nextT, clockLayer.advance(et));
     for (auto& l : layers)
       nextT = std::min(nextT, l.advance(et));
 
