@@ -19,9 +19,11 @@ namespace {
     return v < lo ? lo : v <= hi ? v : hi;
   }
 
+  const uint8_t unityVolume = 89;
+
   inline uint8_t scaleVelocity(uint8_t vel, uint8_t vol) {
     return static_cast<uint8_t>(clamp(
-      static_cast<uint32_t>(vel) * static_cast<uint32_t>(vol) / 89,
+      static_cast<uint32_t>(vel) * static_cast<uint32_t>(vol) / unityVolume,
       0u, 127u));
     // why 89? well... it feels about right...
     // and it is a point on the launchpad pro's grid faders
@@ -328,7 +330,7 @@ namespace {
 }
 
 Layer::Layer()
-  : muted(false), volume(100),
+  : muted(false), volume(unityVolume),
     firstCell(nullptr), recentCell(nullptr),
     timeSinceRecent(0), length(0), position(0)
   { }
