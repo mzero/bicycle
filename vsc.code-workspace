@@ -61,7 +61,8 @@
 			"codecvt": "cpp",
 			"filesystem": "cpp",
 			"set": "cpp",
-			"string_view": "cpp"
+			"string_view": "cpp",
+			"optional": "cpp"
 		},
 		"C_Cpp.default.cppStandard": "c++14",
 		"C_Cpp.default.includePath": [
