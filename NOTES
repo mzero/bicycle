@@ -10,27 +10,26 @@ On Deck
     at a time.
 
 [] measure processing time
-[] timed polling of ALSA
 
 [] odd immediate loop start with launchpad pro on program start
-	- must be some odd ALSA message, or some unexpected MIDI
+	- ALSA can deliver events from device from _before_ it was connected
+	- probably need to flush the input when detecting a subscription
 
-[x] hitting keep on first layer with no notes causes divide by zero error
-
+[] improve display thread - currently just multiple 10ms sleeps and updating
+	- the display as fast as possible... will be excessive on a fast i2c machine
+	- should somehow tie into the minDisplayReferesh time in bicycle.cpp's loop()
 
 Bugs
 ----
 [] handle failed beat estimates better
-	- don't generate MIDI clock in these cases
-	[] there is a divide by zero in there somewhere
+	- don't generate MIDI clock in these cases?
+
 
 Features
 --------
 [] feedback to controller's buttons for mute and arm
 
 [] MIDI channel shift (?)
-[] visual, live configuration
-  [] save & restore from files
 [] track fx
   [] erosion: remove more and more notes (stable) as fader turned down
   [] quantization (?)
@@ -45,14 +44,10 @@ Features
 
 Implementation
 --------------
-[] displaying too often
-	[] what is the timing of the display operation?
-
-[x] command line args
-	[x] configuration file args
-	[x] test only mode
-	[x] unit test annotations in test config file
-
+[x] displaying too often
+	[x] what is the timing of the display operation?
+		-- depends on the speed of the i2c bus: at 100k, it is about 170ms
+			at 1M it is about 17ms
 
 
 Other Ideas
@@ -85,6 +80,9 @@ Other Ideas
 [] async the loops if desired
 
 [] handling control CCs that are momentary vs. toggle
+
+[] visual, live configuration
+  [] save & restore from files
 
 
 HW Notes
