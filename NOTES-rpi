@@ -26,8 +26,18 @@ system, and a Patchbox OS (https://blokas.io/patchbox-os/) system. The later
 is very simple, "just works", is set up for audio and MIDI - and is my main
 development system now.
 
+You need to enable i2c in raspi-config:
+
+    sudo raspi-config
+
+Navigate the menus to Interface > I2C, and then select Yes.
+
 
 = Build Setup
+
+You need to install a system dev package:
+
+    sudo apt install libasound2-dev
 
 One day I'll get this all properly set up with subrepos, but until then
 you need this directory structure:
