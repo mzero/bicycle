@@ -436,6 +436,8 @@ void Layer::addEvent(const MidiEvent& ev) {
 bool Layer::keep(TimeInterval baseLength) {
   if (!firstCell) return false;
   if (!recentCell) return false;
+  if (length == TimeInterval::zero()) return false;
+    // should never happen... but just in case
 
   TimeInterval adj = syncLength(baseLength, length, timeSinceRecent);
 
