@@ -119,7 +119,8 @@ void loop() {
     DisplayThread::update(s);
   }
 
-  midi.poll(timeout);
+  constexpr TimeInterval minDisplayRefresh = std::chrono::milliseconds(250);
+  midi.poll(std::min(timeout, minDisplayRefresh));
 }
 
 bool timeToExit = false;
