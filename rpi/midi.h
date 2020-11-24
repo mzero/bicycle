@@ -12,7 +12,8 @@ class Midi {
     void end();
 
     bool send(const MidiEvent&);
-    bool receive(MidiEvent&, TimeInterval timeout);
+    bool receive(MidiEvent&);
+    bool poll(TimeInterval timeout);
 
   private:
     class Impl;

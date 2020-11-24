@@ -1,9 +1,11 @@
 #include <Arduino.h>
 
+#include <algorithm>
 #include <csignal>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 #include <string>
 
 #include "args.h"
@@ -98,24 +100,40 @@ void teardown() {
 void loop() {
   static const auto clockStart = std::chrono::steady_clock::now();
   const auto sinceStart = std::chrono::steady_clock::now() - clockStart;
-  const auto sinceStartMillis = std::chrono::duration_cast<std::chrono::milliseconds>(sinceStart);
-  const auto millis = sinceStartMillis.count();
 
-  TimeInterval timeout = forever;
-  {
-    TimeInterval dt = theLoop.setTime(std::chrono::duration_cast<WallTime>(sinceStart));
-    timeout = theLoop.advance(dt);
-  }
+  TimeInterval dt = theLoop.setTime(std::chrono::duration_cast<WallTime>(sinceStart));
+  TimeInterval timeout = timeout = theLoop.advance(dt);
 
+  bool received = false;
   MidiEvent ev;
-  while (midi.receive(ev, timeout)) {
+  while (midi.receive(ev)) {
     noteEvent(ev);
+    received = true;
+  }
+  if (received) return; // go 'round the loop again!
+
+  static auto nextDisplayUpdate =
+    std::chrono::steady_clock::duration::zero();
+
+  if (sinceStart >= nextDisplayUpdate) {
+    auto millisSinceStart =
+      std::chrono::duration_cast<std::chrono::milliseconds>(sinceStart).count();
+
+    Loop::Status s = theLoop.status();
+    displayUpdate(millisSinceStart, s);
+
+    nextDisplayUpdate = sinceStart + std::chrono::milliseconds(250);
+      // Update rate of the display
+
+    return; // go 'round the loop again
+  }
+  else {
+    timeout = std::min(timeout,
+      std::chrono::duration_cast<TimeInterval>(nextDisplayUpdate - sinceStart));
   }
 
-  // analogUpdate(millis);
-
-  Loop::Status s = theLoop.status();
-  displayUpdate(millis, s);
+  // no display, no events... poll for input
+  midi.poll(timeout);
 }
 
 

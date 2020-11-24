@@ -16,7 +16,8 @@ namespace {
       void end();
 
       bool send(const MidiEvent&);
-      bool receive(MidiEvent&, TimeInterval timeout);
+      bool receive(MidiEvent&);
+      bool poll(TimeInterval timeout);
 
     private:
       snd_seq_t *seq = nullptr;
@@ -92,28 +93,19 @@ namespace {
     serr = snd_seq_event_output_direct(seq, &ev);
     if (errCheck(serr, "event output")) return false;
 
-    // serr = snd_seq_drain_output(seq);
-    // errCheck(serr, "drain");
+    serr = snd_seq_drain_output(seq);
+    errCheck(serr, "drain output");
+    // serr = snd_seq_sync_output_queue(seq);
+    // errCheck(serr, "sync output");
 
     return true;
   }
 
-  bool AlsaMidi::receive(MidiEvent& m, TimeInterval timeout) {
+  bool AlsaMidi::receive(MidiEvent& m) {
     snd_seq_event_t *ev;
 
     auto q = snd_seq_event_input(seq, &ev);
-    if (q == -EAGAIN) {
-      // nothing there, try once more...
-      if (false && timeout != forever) {
-      	 std::cout << "tNext = " << std::dec << timeout.count() << std::endl;
-	    }
-      // int t = (timeout == forever) ? 500 : timeout;
-      // std::cout << "polling " << std::dec << npfds << " fds, waiting " << t << std::endl;
-      // poll(pfds, npfds, t);
-      // q = snd_seq_event_input(seq, &ev);
-      if (q == -EAGAIN)
-        return false;   // still nothing there
-    }
+    if (q == -EAGAIN) return false;
     if (errCheck(q, "event input")) return false;
 
     snd_midi_event_reset_decode(mev);
@@ -124,6 +116,21 @@ namespace {
     if (errCheck(n, "midi decode")) return false;
 
     return true;
+  }
+
+  bool AlsaMidi::poll(TimeInterval timeout) {
+    int t = (timeout == forever)
+      ? -1
+      : std::chrono::duration_cast<std::chrono::milliseconds>(timeout).count();
+    auto r = ::poll(pfds, npfds, t);
+
+    if (false) {
+      unsigned short revents;
+      auto e = snd_seq_poll_descriptors_revents(seq, pfds, npfds, &revents);
+      if (errCheck(e, "poll revents")) return false;
+      return revents & POLLIN;
+    }
+    return r > 0;
   }
 
   bool AlsaMidi::errCheck(int serr, const char* op) {
@@ -164,7 +171,11 @@ bool Midi::send(const MidiEvent& ev) {
   return impl ? impl->send(ev) : false;
 }
 
-bool Midi::receive(MidiEvent& ev, TimeInterval timeout) {
-  return impl ? impl->receive(ev, timeout) : false;
+bool Midi::receive(MidiEvent& ev) {
+  return impl ? impl->receive(ev) : false;
+}
+
+bool Midi::poll(TimeInterval timeout) {
+  return impl ? impl->poll(timeout) : false;
 }
 
