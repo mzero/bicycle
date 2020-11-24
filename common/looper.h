@@ -56,6 +56,8 @@ public:
   void layerArm(int layer);   // start overwriting this layer on next event
   void layerRearm();
 
+  void enableMidiClock(bool);
+
   struct LayerStatus {
     TimeInterval length;
     TimeInterval position;
@@ -78,6 +80,7 @@ public:
   static void allOffNow();
 
 private:
+  bool midiClock;
   bool armed;
 
   int activeLayer;

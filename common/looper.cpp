@@ -479,7 +479,8 @@ void Layer::clear() {
 }
 
 Loop::Loop()
-  : armed(true), layerCount(0), activeLayer(0), layerArmed(false),
+  : midiClock(false),
+    armed(true), layerCount(0), activeLayer(0), layerArmed(false),
     layers(10)
   {
     clearAwatingOff();
@@ -543,7 +544,8 @@ void Loop::keep() {
 
   if (layerCount == 1) {
     auto beats = estimateMeter(l.length, l.recentCell);
-    clockLayer.set(l.length, beats);
+    if (midiClock)
+      clockLayer.set(l.length, beats);
   }
   activeLayer += activeLayer < (layers.size() - 1) ? 1 : 0;
   layerArmed = true;
@@ -596,6 +598,10 @@ void Loop::layerArm(int layer) {
 
 void Loop::layerRearm() {
   layerArm(activeLayer);
+}
+
+void Loop::enableMidiClock(bool b) {
+  midiClock = b;
 }
 
 Loop::Status Loop::status() const {
