@@ -122,9 +122,11 @@ void loop() {
     Loop::Status s = theLoop.status();
     displayUpdate(millisSinceStart, s);
 
-    nextDisplayUpdate = sinceStart + std::chrono::milliseconds(250);
-      // Update rate of the display
+    const static auto displayRefresh = std::chrono::milliseconds(200);
+      // The display taks about 18ms to update. If we update too often, then
+      // MIDI responsiveness will suffer. If too slow, the display is choppy.
 
+    nextDisplayUpdate = sinceStart + displayRefresh;
     return; // go 'round the loop again
   }
   else {
