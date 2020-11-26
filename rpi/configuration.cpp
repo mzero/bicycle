@@ -208,17 +208,18 @@ namespace {
     return { status, chStart, chEnd, numStart, numEnd };
   }
 
-  void parseRule(std::string line) {
+  void parseRule(const std::string& line) {
     std::smatch m;
 
+    std::string trimmedLine = line;
     static const std::regex trimWhitespace("\\s*(.*?)\\s*");
     if (std::regex_match(line, m, trimWhitespace))
-      line = m.str(1);  // remove leading and trailing whitespace
+      trimmedLine = m.str(1);
 
-    if (line.empty()) return;
+    if (trimmedLine.empty()) return;
 
     static const std::regex splitActionAndEvent("([^:]*?)\\s*:\\s*(.*)");
-    if (!std::regex_match(line, m, splitActionAndEvent))
+    if (!std::regex_match(trimmedLine, m, splitActionAndEvent))
       throw Parse(Error() << "bad format, missing ':'");
 
     std::string actionStr = m.str(1);
@@ -233,19 +234,20 @@ namespace {
     applyMapping(ac, ec);
   }
 
-  void parseLine(std::string line) {
+  void parseLine(const std::string& line) {
     std::smatch m;
 
     bool expect_failure = false;
 
+    std::string uncommentedLine = line;
     static const std::regex decomment("([^#]*)#(.*)");
     if (std::regex_match(line, m, decomment)) {
-      line = m.str(1); // replace line with non-comment part
+      uncommentedLine = m.str(1);
       expect_failure = m.str(2).find("FAIL") != std::string::npos;
     }
 
     try {
-      parseRule(line);
+      parseRule(uncommentedLine);
     }
     catch (Parse& p) {
       if (expect_failure) return;
