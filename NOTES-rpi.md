@@ -1,39 +1,52 @@
 
-= Machine Setup
+# Machine Setup
 
-system: Raspberry Pi 3 Model B
-  - but this should work with pretty much anything since Pi 2.
+**System:** This should work with pretty much any Raspberry Pi 2 or later.
 
-display: Adafruit 128x64 OLED Bonnet for Raspberry Pi
+**Display:** Adafruit 128x64 OLED Bonnet for Raspberry Pi
   - https://www.adafruit.com/product/3531
   - The looper will run without this being attached and none of the UI
     requires that you see the display. But I'm developing with the assumption
     it is there.
 
-extra: Pisound
+**Extra:** Pisound
   - https://blokas.io/pisound/
   - Not really needed, but I use it to get DIN MIDI in/out.
 
-MIDI devices
+**MIDI devices**
   - Connect USB MIDI devices right into the Pi!
   - Use Pisound, or a USB audio/midi interface for DIN MIDI
 
 
-= Operating System
+## Operating System
 
-In theory, any Raspian OS will work. I have both a standard issue Raspian
-system, and a Patchbox OS (https://blokas.io/patchbox-os/) system. The later
-is very simple, "just works", is set up for audio and MIDI - and is my main
-development system now.
+In theory, any Linux based OS will work. I routinely develop with:
 
-You need to enable i2c in raspi-config:
+  * [Patchbox OS](https://blokas.io/patchbox-os/) — a simple, "just works" system set up for audio and MIDI
+  * [Raspberry Pi OS](https://www.raspberrypi.org/software/)* — previously
+  * The older **Raspbian** OS
+
+## I2C
+
+For the display, you'll need to enable i2c in raspi-config:
 
     sudo raspi-config
 
-Navigate the menus to Interface > I2C, and then select Yes.
+Navigate the menus to Interface > I2C, and then select Yes. Then exit.
+
+You may want to also speed up the I2C bus. If the display is the only thing on it, it will almost certainly work at 10x the default speed - which will make display updates much smoother.
+
+Edit the file `/boot/config.txt` and find the lines that start with `dtparam=`.
+Add a line that reads:
+
+    dtparam=i2c_baudrate=1000000
+
+Now reboot.
 
 
-= Build Setup
+
+
+# Build
 
 You need to install a system dev package:
 
@@ -54,7 +67,7 @@ You could set this up with:
 
     #!/bin/sh
 
-    mkdir projets
+    mkdir projects
     cd projects
     git clone https://github.com/mzero/amidiminder.git
     git clone https://github.com/mzero/bicycle.git
@@ -66,16 +79,25 @@ You could set this up with:
     cd ..
 
 
-= Build
+# Build
 
-    (cd amidiminder; make)
-    (cd bicycle; make)
+You don't need to have `amidiminder`, but it'll keep you from having to type
+`aconnect` all the time to connect your MIDI devices to `bicycle`.
+
+    cd amidiminder
+    make
+    sudo dpkg -i build/amidiminder.deb
+
+Building bicyle is easy:
+
+    cd bicycle
+    git checkout rpi
+    make
 
 
-= Run
+# Run
 
-    amidiminder &   # one day this will be a system service
-    bicycle &
+    build/bicycle &
 
 Now hook your MIDI stuff up. For example:
 
@@ -98,21 +120,12 @@ Now hook your MIDI stuff up. For example:
         1 'synths          '
 
     $ aconnect nanoKONTROL:0 bicycle:0
-    ALSA Seq error -2 in midi decode
-    # ignore this error
 
     $ aconnect nanoKEY2:0 bicycle:0
-    ALSA Seq error -2 in midi decode
 
     $ aconnect bicycle:1 Circuit:0
 
-= Configuration
+# Configuration
 
-Currently all configuration is in the code itself. See the file bicycle.cpp
-for how various channels and notes & ccs are mapped to the looper's functions.
-Pretty much any other MIDI is simply recorded into the looper's layers, and
-played back out verbatim. So besure the MIDI channel on your main controller
-matches what the synth(s) want.
-
-
+See the file `bicycle.config`. The format should be pretty self explanitory.
 
