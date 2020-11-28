@@ -1,5 +1,6 @@
 #include "display.h"
 
+#include <cmath>
 #include <string>
 
 #include <ClearUI.h>
@@ -43,6 +44,11 @@ namespace {
       }
 
       if (spanT == TimeInterval::zero()) return;
+      const float scale = float(w) / spanT.count();
+
+      auto mapT = [&](TimeInterval t){
+        return int16_t(std::round(t.count() * scale));
+      };
 
       uint16_t px = 0;
 
@@ -54,7 +60,7 @@ namespace {
         display.drawFastVLine(x, ly, 3, c);
         display.drawFastVLine(x+w-1, ly, 3, c);
 
-        px = x + roundingDivide(l.position.count() * w, spanT.count());
+        px = x + mapT(l.position);
 
         display.drawFastVLine(px, ly, 3, c);
       }
@@ -68,8 +74,8 @@ namespace {
         TimeInterval ll = l.length;
 
         int16_t ly = y + 4*i;
-        int16_t lx = x + roundingDivide(ls.count() * w, spanT.count());
-        int16_t lw = roundingDivide(ll.count() * w, spanT.count());
+        int16_t lx = x + mapT(ls);
+        int16_t lw = mapT(ll);
 
         display.drawFastHLine(lx, ly+1, lw, c);
         display.drawFastVLine(lx, ly, 3, c);
