@@ -24,6 +24,7 @@ public:
   void addEvent(const MidiEvent&);
   bool keep(TimeInterval baseLength = TimeInterval::zero());
   void clear();
+  bool looping() const;
 
   bool muted;
   uint8_t volume;

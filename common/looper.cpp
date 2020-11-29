@@ -485,6 +485,10 @@ void Layer::clear() {
     // TODO: How to communicate back to controller?
 }
 
+bool Layer::looping() const {
+  return firstCell == nullptr;
+}
+
 Loop::Loop()
   : midiClock(false),
     armed(true), layerCount(0), activeLayer(0), layerArmed(false),
@@ -584,11 +588,18 @@ void Loop::layerVolume(int layer, uint8_t volume) {
 }
 
 void Loop::layerArm(int layer) {
+  if (!(0 <= layer && layer < layers.size())) return;
+
   if (layerArmed && activeLayer == layer
       && walltime < (armedTime + std::chrono::seconds(1))) {
     // double press of the layer arm control
     layers[activeLayer].clear();
     return;
+  }
+
+  if (!layers[layer].looping()) {
+    // if use rearms before keep, just trash what they recorded
+    layers[layer].clear();
   }
 
   // FIXME: what to do if still recording initial layer?
