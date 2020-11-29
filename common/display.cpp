@@ -15,6 +15,11 @@ namespace {
     return (x + q / 2) / q;
   }
 
+  void drawDottedHLine(int16_t x, int16_t y, int16_t w, uint16_t c) {
+    for (auto i = x; i < x+w; i += 2)
+      display.drawPixel(i, y, c);
+  }
+
   Loop::Status currentStatus;
 
   class LoopField : public Field {
@@ -51,36 +56,32 @@ namespace {
       };
 
       uint16_t px = 0;
+      uint16_t ly = y;
 
       if (keyLayer >= 0) {
         auto& l = currentStatus.layers[keyLayer];
-        int16_t ly = y + 4*keyLayer;
-
-        display.drawFastHLine(x, ly+1, w, c);
-        display.drawFastVLine(x, ly, 3, c);
-        display.drawFastVLine(x+w-1, ly, 3, c);
-
         px = x + mapT(l.position);
-
-        display.drawFastVLine(px, ly, 3, c);
       }
-      for (int i = 0; i < currentStatus.layerCount; ++i) {
-        if (i == keyLayer) continue;
 
+      for (int i = 0; i < currentStatus.layerCount; ++i) {
         auto& l = currentStatus.layers[i];
         if (l.length == TimeInterval::zero()) continue;
 
         TimeInterval ls = keyPos - l.position;
         TimeInterval ll = l.length;
 
-        int16_t ly = y + 4*i;
         int16_t lx = x + mapT(ls);
         int16_t lw = mapT(ll);
 
-        display.drawFastHLine(lx, ly+1, lw, c);
+        if (l.muted)
+          drawDottedHLine(lx, ly+1, lw, c);
+        else
+          display.drawFastHLine(lx, ly+1, lw, c);
         display.drawFastVLine(lx, ly, 3, c);
         display.drawFastVLine(lx+lw-1, ly, 3, c);
         display.drawFastVLine(px, ly, 3, c);
+
+        ly += (i % 3 == 2) ? 7 : 4;
       }
     }
 
@@ -215,12 +216,12 @@ namespace {
     std::string getValue() const { return Message::lastMessage(); }
 };
 
-  auto loopField = LoopField(0, 0, 128, 30);
-  auto lengthField = LengthField(92, 34, 36, 8);
-  auto layerField = LayerField(20, 37, 70, 5);
-  auto armedField = ArmedField(0, 34, 10, 8);
-  auto cellField = CellCountField(92, 44, 36, 8);
-  auto msgField = MessageField(0, 56, 128, 8);
+  auto loopField = LoopField(0, 0, 128, 44);
+  auto armedField = ArmedField(0, 46, 10, 8);
+  auto layerField = LayerField(20, 47, 70, 5);
+  auto lengthField = LengthField(92, 46, 36, 8);
+  auto msgField = MessageField(0, 56, 90, 8);
+  auto cellField = CellCountField(92, 56, 36, 8);
 
   //auto mainPage = Layout({&loopField}, 0);
 
