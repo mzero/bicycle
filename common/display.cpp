@@ -65,22 +65,22 @@ namespace {
 
       for (int i = 0; i < currentStatus.layerCount; ++i) {
         auto& l = currentStatus.layers[i];
-        if (l.length == TimeInterval::zero()) continue;
+        if (l.length != TimeInterval::zero()) {
+          TimeInterval ls = keyPos - l.position;
+          TimeInterval ll = l.length;
 
-        TimeInterval ls = keyPos - l.position;
-        TimeInterval ll = l.length;
+          int16_t lx = x + mapT(ls);
+          int16_t lw = mapT(ll);
 
-        int16_t lx = x + mapT(ls);
-        int16_t lw = mapT(ll);
-
-        if (l.muted)
-          drawDottedHLine(lx, ly+1, lw, c);
-        else
-          display.drawFastHLine(lx, ly+1, lw, c);
-        display.drawFastVLine(lx, ly, 3, c);
-        display.drawFastVLine(lx+lw-1, ly, 3, c);
-        display.drawFastVLine(px, ly, 3, c);
-
+          if (l.muted)
+            drawDottedHLine(lx, ly+1, lw, c);
+          else
+            display.drawFastHLine(lx, ly+1, lw, c);
+          display.drawFastVLine(lx, ly, 3, c);
+          display.drawFastVLine(lx+lw-1, ly, 3, c);
+          display.drawFastVLine(px, ly, 3, c);
+        }
+        
         ly += (i % 3 == 2) ? 7 : 4;
       }
     }
