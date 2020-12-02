@@ -289,6 +289,7 @@ bool Configuration::begin() {
 
 Command Configuration::command(const MidiEvent& ev) {
   switch (ev.status & 0xf0) {
+    case 0x80:    // treat note off as same command as note on
     case 0x90:    return noteMap.get(ev);
     case 0xb0:    return ccMap.get(ev);
     default:      return Command(Action::none);
