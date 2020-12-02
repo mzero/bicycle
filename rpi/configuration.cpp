@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <regex>
 #include <sstream>
 #include <string>
@@ -27,6 +28,13 @@
   if the line fails to parse, it is silently ignored, and if it does parse
   it is reported as an error.
 */
+
+bool Command::operator<(const Command& rhs) const {
+  const Command& lhs = *this;
+  return lhs.action != rhs.action
+    ? lhs.action < rhs.action
+    : lhs.layer < rhs.layer;
+}
 
 namespace {
 
@@ -54,6 +62,13 @@ namespace {
   EventMap<Command> noteMap(Command(Action::none));
   EventMap<Command> ccMap(Command(Action::none));
 
+  std::map<Command, std::vector<MidiEvent>> triggerMap;
+
+  void addTrigger(Command cmd, uint8_t status, int ch, int num) {
+    MidiEvent me(status | ch, num, 0);
+    triggerMap[cmd].push_back(me);
+  }
+
   struct ActionClause {
     Action action;
     int layerStart;
@@ -80,6 +95,8 @@ namespace {
             noteMap.set(ch - 1, num, cmd);
           else
             ccMap.set(ch - 1, num, cmd);
+
+          addTrigger(cmd, ec.status, ch - 1, num);
         }
     } else {
       int nLayers = ac.layerEnd - ac.layerStart + 1;
@@ -92,6 +109,8 @@ namespace {
             noteMap.set(ch - 1, ec.numStart + offset, cmd);
           else
             ccMap.set(ch - 1, ec.numStart + offset, cmd);
+
+          addTrigger(cmd, ec.status, ch - 1, ec.numStart + offset);
         }
       }
     }
@@ -294,4 +313,8 @@ Command Configuration::command(const MidiEvent& ev) {
     case 0xb0:    return ccMap.get(ev);
     default:      return Command(Action::none);
   }
+}
+
+const std::vector<MidiEvent>& Configuration::triggers(Command cmd) {
+  return triggerMap[cmd];
 }
