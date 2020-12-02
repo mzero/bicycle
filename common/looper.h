@@ -70,7 +70,9 @@ public:
     int   activeLayer;
     bool  armed;
     bool  layerArmed;
-    std::array<LayerStatus, 10> layers;
+
+    static constexpr int numLayers = 10;
+    std::array<LayerStatus, numLayers> layers;
  };
 
   Status status() const;
