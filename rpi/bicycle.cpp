@@ -66,7 +66,25 @@ void noteEvent(const MidiEvent& ev) {
   theLoop.addEvent(ev);
 }
 
+void updateMutes(const Loop::Status& s) {
+  static bool firstTime = true;
+  static bool lastMuted[Loop::Status::numLayers];
 
+  for (int i = 0; i < s.layers.size(); ++i) {
+    bool muted = s.layers[i].muted;
+    if (!firstTime && lastMuted[i] == muted) continue;
+    lastMuted[i] = muted;
+
+    Command cmd(Action::layerMute, i);
+    for (auto& t : Configuration::triggers(cmd)) {
+      MidiEvent me = t;
+      me.data2 = muted ? 127 : 0;
+      midi.sendControl(me);
+    }
+  }
+
+  firstTime = false;
+}
 
 std::ofstream logFile;
 void writeLog(const std::string& msg) {
@@ -117,6 +135,8 @@ void loop() {
   if (DisplayThread::readyForUpdate()) {
     Loop::Status s = theLoop.status();
     DisplayThread::update(s);
+
+    updateMutes(s);
   }
 
   constexpr TimeInterval minDisplayRefresh = std::chrono::milliseconds(250);
