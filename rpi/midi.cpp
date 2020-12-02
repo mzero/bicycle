@@ -15,7 +15,8 @@ namespace {
       void begin();
       void end();
 
-      bool send(const MidiEvent&);
+      bool sendSynth(const MidiEvent& me)   { return send(me, synthPort); }
+      bool sendControl(const MidiEvent& me) { return send(me, controlPort); }
       bool receive(MidiEvent&);
       bool poll(TimeInterval timeout);
 
@@ -25,8 +26,10 @@ namespace {
       int npfds = 0;
       struct pollfd *pfds = nullptr;
 
-      int inPort;
-      int outPort;
+      int controlPort;
+      int synthPort;
+
+      bool send(const MidiEvent&, int port);
 
       bool errCheck(int, const char* = nullptr);
       bool errFatal(int, const char* = nullptr);
@@ -42,15 +45,16 @@ namespace {
     serr = snd_seq_set_client_name(seq, "bicycle");
     if (errFatal(serr, "name sequencer")) return;
 
-    inPort = snd_seq_create_simple_port(seq, "controllers",
-      SND_SEQ_PORT_CAP_WRITE|SND_SEQ_PORT_CAP_SUBS_WRITE,
+    controlPort = snd_seq_create_simple_port(seq, "controllers",
+      SND_SEQ_PORT_CAP_WRITE|SND_SEQ_PORT_CAP_SUBS_WRITE
+        | SND_SEQ_PORT_CAP_READ|SND_SEQ_PORT_CAP_SUBS_READ,
       SND_SEQ_PORT_TYPE_APPLICATION);
-    if (errFatal(inPort, "create in port")) return;
+    if (errFatal(controlPort, "create in port")) return;
 
-    outPort = snd_seq_create_simple_port(seq, "synths",
+    synthPort = snd_seq_create_simple_port(seq, "synths",
       SND_SEQ_PORT_CAP_READ|SND_SEQ_PORT_CAP_SUBS_READ,
       SND_SEQ_PORT_TYPE_APPLICATION);
-    if (errFatal(outPort, "create out port")) return;
+    if (errFatal(synthPort, "create out port")) return;
 
     npfds = snd_seq_poll_descriptors_count(seq, POLLIN);
     pfds = new struct pollfd[npfds];
@@ -77,11 +81,11 @@ namespace {
   }
 
 
-  bool AlsaMidi::send(const MidiEvent& m) {
+  bool AlsaMidi::send(const MidiEvent& m, int port) {
     snd_seq_event_t ev;
 
     snd_seq_ev_clear(&ev);
-    snd_seq_ev_set_source(&ev, outPort);
+    snd_seq_ev_set_source(&ev, port);
     snd_seq_ev_set_subs(&ev);
     snd_seq_ev_set_direct(&ev);
 
@@ -167,8 +171,12 @@ void Midi::end() {
   }
 }
 
-bool Midi::send(const MidiEvent& ev) {
-  return impl ? impl->send(ev) : false;
+bool Midi::sendSynth(const MidiEvent& ev) {
+  return impl ? impl->sendSynth(ev) : false;
+}
+
+bool Midi::sendControl(const MidiEvent& ev) {
+  return impl ? impl->sendControl(ev) : false;
 }
 
 bool Midi::receive(MidiEvent& ev) {

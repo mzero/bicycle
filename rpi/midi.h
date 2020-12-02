@@ -11,7 +11,8 @@ class Midi {
     void begin();
     void end();
 
-    bool send(const MidiEvent&);
+    bool sendSynth(const MidiEvent&);
+    bool sendControl(const MidiEvent&);
     bool receive(MidiEvent&);
     bool poll(TimeInterval timeout);
 

@@ -21,7 +21,7 @@ Midi midi;
 Loop theLoop;
 
 void playEvent(const MidiEvent& ev) {
-  midi.send(ev);
+  midi.sendSynth(ev);
 }
 
 void noteEvent(const MidiEvent& ev) {
