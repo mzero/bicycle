@@ -107,6 +107,7 @@ void setup() {
   midi.begin();
   theLoop.begin(playEvent);
   theLoop.enableMidiClock(Args::sendMidiClock);
+  theLoop.setMeter(Args::meter);
 }
 
 void teardown() {

@@ -3,12 +3,17 @@
 
 #include <string>
 
+#include "types.h"
+
+
 namespace Args {
   extern std::string configFilePath;
   extern std::string logFilePath;
   extern bool configCheckOnly;
 
   extern bool sendMidiClock;
+
+  extern Meter meter;
 
   extern int exitCode;
   bool parse(int argc, char* argv[]);

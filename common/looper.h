@@ -58,6 +58,7 @@ public:
   void layerRearm();
 
   void enableMidiClock(bool);
+  void setMeter(const Meter&);
 
   struct LayerStatus {
     TimeInterval length;
@@ -83,6 +84,8 @@ public:
   static void allOffNow();
 
 private:
+  Meter meter;
+
   bool midiClock;
   bool armed;
 

@@ -9,8 +9,10 @@ namespace Args {
 
   bool sendMidiClock = false;
 
+  Meter meter;
 
   int exitCode = 0;
+
 
   bool parse(int argc, char* argv[]) {
     CLI::App app{"bicycle - a MIDI looper"};
@@ -20,6 +22,11 @@ namespace Args {
     app.add_flag("-C,--check-config", configCheckOnly, "exit after config parse");
 
     app.add_flag("-s,--sync-out", sendMidiClock, "send MIDI clock sync");
+
+    app.add_flag("-b,--beats", meter.beats, "fix beats in first layer")
+      ->check(CLI::Range(1,16));
+    app.add_flag("-p,--pulse", meter.base, "pulse of fixed meter, 4, 8, etc..")
+      ->check(CLI::IsMember({1, 2, 4, 8, 16}));
 
     try {
         app.parse(argc, argv);

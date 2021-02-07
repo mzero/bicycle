@@ -26,6 +26,15 @@ constexpr NoteDuration maxDuration = NoteDuration::max();
 constexpr TimeInterval forever = TimeInterval::max();
 
 
+struct Meter {
+  int beats = 0;
+  int base = 4;
+
+  bool unspecified() const { return beats == 0; }
+  bool specified() const { return beats != 0; }
+};
+
+
 // MIDI
 
 union MidiEvent {

@@ -92,7 +92,7 @@ namespace {
     return e;
   }
 
-  int estimateMeter(TimeInterval base, const Cell* firstCell) {
+  Meter estimateMeter(TimeInterval base, const Cell* firstCell) {
     constexpr float minBPM = 75; // 85;
     constexpr float maxBPM = 140; // 2 * minBPM;
 
@@ -155,7 +155,7 @@ namespace {
       msg << bestMN << " @ " << static_cast<int>(bestBPM) << " bpm";
     }
 
-    return bestMN;
+    return { bestMN, 4 };
   }
 
   WallTime walltime(0);
@@ -273,9 +273,9 @@ namespace {
   public:
     ClockLayer() : running(false) { }
 
-    void set(TimeInterval length_, int beats) {
+    void set(TimeInterval length_, const Meter& meter) {
       length = length_;
-      clockCount = beats * 24;
+      clockCount = meter.beats * 24 * 4 / meter.base;
       clock = length / clockCount;
 
       position = TimeInterval::zero();
@@ -550,9 +550,11 @@ void Loop::keep() {
     return;
 
   if (layerCount == 1) {
-    auto beats = estimateMeter(l.length, l.recentCell);
+    auto m = meter;
+    if (m.unspecified())
+      m = estimateMeter(l.length, l.recentCell);
     if (midiClock)
-      clockLayer.set(l.length, beats);
+      clockLayer.set(l.length, m);
   }
   activeLayer += activeLayer < (layers.size() - 1) ? 1 : 0;
   layerArmed = true;
@@ -616,6 +618,10 @@ void Loop::layerRearm() {
 
 void Loop::enableMidiClock(bool b) {
   midiClock = b;
+}
+
+void Loop::setMeter(const Meter& m) {
+  meter = m;
 }
 
 Loop::Status Loop::status() const {
