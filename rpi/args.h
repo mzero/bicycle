@@ -3,8 +3,8 @@
 
 #include <string>
 
-#include "types.h"
-
+// N.B.: It is important to keep this interface as minimal as possible
+// as re-compiling args.cpp is very expensive.
 
 namespace Args {
   extern std::string configFilePath;
@@ -13,7 +13,8 @@ namespace Args {
 
   extern bool sendMidiClock;
 
-  extern Meter meter;
+  extern int meterBeats;  // 0 means unspecified
+  extern int meterBase;
 
   extern int exitCode;
   bool parse(int argc, char* argv[]);

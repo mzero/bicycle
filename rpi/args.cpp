@@ -9,7 +9,8 @@ namespace Args {
 
   bool sendMidiClock = false;
 
-  Meter meter;
+  int meterBeats;
+  int meterBase;
 
   int exitCode = 0;
 
@@ -23,9 +24,9 @@ namespace Args {
 
     app.add_flag("-s,--sync-out", sendMidiClock, "send MIDI clock sync");
 
-    app.add_flag("-b,--beats", meter.beats, "fix beats in first layer")
+    app.add_flag("-b,--beats", meterBeats, "fix beats in first layer")
       ->check(CLI::Range(1,16));
-    app.add_flag("-p,--pulse", meter.base, "pulse of fixed meter, 4, 8, etc..")
+    app.add_flag("-p,--pulse", meterBase, "pulse of fixed meter, 4, 8, etc..")
       ->check(CLI::IsMember({1, 2, 4, 8, 16}));
 
     try {
