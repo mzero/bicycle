@@ -124,8 +124,8 @@ void loop() {
   static const auto clockStart = std::chrono::steady_clock::now();
   const auto sinceStart = std::chrono::steady_clock::now() - clockStart;
 
-  TimeInterval dt = theLoop.setTime(std::chrono::duration_cast<WallTime>(sinceStart));
-  TimeInterval timeout = timeout = theLoop.advance(dt);
+  TimeInterval timeout = timeout = theLoop.advance(
+    std::chrono::duration_cast<WallTime>(sinceStart));
 
   bool received = false;
   MidiEvent ev;

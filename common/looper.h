@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "cell.h"
+#include "metrictime.h"
 #include "types.h"
 
 
@@ -18,11 +19,11 @@ public:
   Layer();
   ~Layer();
 
-  TimeInterval next() const;
-  TimeInterval advance(TimeInterval);
+  EventInterval next() const;
+  EventInterval advance(EventInterval);
 
-  void addEvent(const MidiEvent&);
-  bool keep(TimeInterval baseLength = TimeInterval::zero());
+  void addEvent(EventInterval, const MidiEvent&);
+  bool keep(EventInterval baseLength = EventInterval::zero());
   void clear();
   bool looping() const;
 
@@ -32,10 +33,10 @@ public:
 private:
   Cell* firstCell;
   Cell* recentCell;
-  TimeInterval timeSinceRecent;
+  EventInterval timeSinceRecent;
 
-  TimeInterval length;
-  TimeInterval position;
+  EventInterval length;
+  EventInterval position;
 
   friend class Loop;
 };
@@ -45,7 +46,7 @@ class Loop {
 public:
   Loop();
 
-  TimeInterval advance(TimeInterval);
+  TimeInterval advance(WallTime now);
 
   void addEvent(const MidiEvent&);
   void keep();      // arm next layer
@@ -61,9 +62,9 @@ public:
   void setMeter(const Meter&);
 
   struct LayerStatus {
-    TimeInterval length;
-    TimeInterval position;
-    bool         muted;
+    EventInterval length;
+    EventInterval position;
+    bool          muted;
   };
 
   struct Status {
@@ -79,11 +80,16 @@ public:
   Status status() const;
 
   static void begin(EventFunc);
-  static TimeInterval setTime(WallTime);
-
   static void allOffNow();
 
 private:
+  WallTime      epochWall;
+  EventInterval epochTime;
+  Tempo         epochTempo;
+
+  WallTime      nowWall;
+  EventInterval nowTime;
+
   Meter meter;
 
   bool midiClock;

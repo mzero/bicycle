@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstring>
 
+#include "analysis.h"
 #include "cell.h"
 #include "message.h"
 #include "types.h"
@@ -29,165 +30,33 @@ namespace {
     // and it is a point on the launchpad pro's grid faders
   }
 
-  TimeInterval syncLength(
-      TimeInterval base, TimeInterval len, TimeInterval maxShorten) {
-    const int limit = 7;
-
-    if (base == TimeInterval::zero())
-      return TimeInterval::zero();
-
-    Log log;
-    log << "layer sync: "
-      << base.count() << " :: " << len.count()
-      << " (" << maxShorten.count() << ") = ";
-
-    double b = base.count();
-    double l = len.count();
-    double x = 0.0 - maxShorten.count();
-
-    int nBest = 0;
-    int mBest = 0;
-    double errBest = INFINITY;
-
-    for (int i = 1; i < limit; ++i) {
-      int n;
-      int m;
-
-      if (b < l) {
-        n = std::lround(i * l / b);
-        m = i;
-      } else {
-        n = i;
-        m = std::lround(i * b / l);
-      }
-      if (i > 1 && (n >= limit || m >= limit)) continue;
-
-      double err = (n * b - m * l) / m;
-      if (err > x && std::abs(err) < std::abs(errBest)) {
-        nBest = n;
-        mBest = m;
-        errBest = err;
-      }
-    }
-    Message msg;
-    if (nBest == 0) {
-      log << "failed to find relationship";
-      msg << "?:?";
-      return TimeInterval::zero();
-    }
-
-    int adj = lround(errBest);
-    log << nBest << ":" << mBest << ", adjusting by " << adj;
-    msg << nBest << ":" << mBest;
-    return TimeInterval(adj);
-  }
-
-  float beatError(float x) {
-    float e = 0.0f;
-    for (int i = 0; i < 8; ++i) {
-      x = x - std::trunc(x);
-      e += x >= 0.5f ? (1.0f - x) : x;
-      x = x + x;
-    }
-    return e;
-  }
-
-  Meter estimateMeter(TimeInterval base, const Cell* firstCell) {
-    constexpr float minBPM = 75; // 85;
-    constexpr float maxBPM = 140; // 2 * minBPM;
-
-    using Seconds = std::chrono::duration<float>;
-    constexpr Seconds maxQnote = std::chrono::minutes(1) / minBPM;
-    constexpr Seconds minQnote = std::chrono::minutes(1) / maxBPM;
-
-    Seconds basef(base);
-
-    int minMN = int(ceilf(basef / maxQnote));
-    int maxMN = int(floorf(basef / minQnote));
-
-    int bestMN = 0;
-    float bestErr = INFINITY;
-
-    for (int mn = minMN; mn <= maxMN; ++mn) {
-      const Seconds qn = basef / mn;
-      const float qnf = qn.count();
-
-      float err = 0.0f;
-      auto p = firstCell;
-      TimeInterval t(0);
-      while (p) {
-        float tf = Seconds(t).count();
-        err += beatError(tf / qnf);
-        if (err > bestErr) break;
-
-        t += p->nextTime;
-        p = p->next();
-        if (p == firstCell) break;
-      }
-
-      if (err < bestErr) {
-        bestMN = mn;
-        bestErr = err;
-      }
-    }
-
-    {
-      Log log;
-      log << "layer deltas: ";
-      auto p = firstCell;
-      while (p) {
-        log << p->nextTime.count() << ",";
-        p = p->next();
-        if (p == firstCell) break;
-      }
-    }
-
-    if (bestMN == 0)
-      bestMN = 1; // should never happen, but just to be safe
-
-    {
-      Log log;
-      float bestBPM = std::chrono::minutes(1) / (basef / bestMN);
-      log << "meter: " << bestMN << "beats ("
-        << minMN << "," << maxMN << ") @ " << bestBPM << " bpm";
-
-      Message msg;
-      msg << bestMN << " @ " << static_cast<int>(bestBPM) << " bpm";
-    }
-
-    return { bestMN, 4 };
-  }
-
-  WallTime walltime(0);
 
   EventFunc player;
 
 
   struct AwaitOff {
     Cell* cell;
-    WallTime start;
+    EventInterval start;
   };
 
   std::array<AwaitOff, 128> awaitingOff;
 
-
-  void finishAwaitingOff(const MidiEvent& ev) {
+  void finishAwaitingOff(EventInterval now, const MidiEvent& ev) {
     auto& ao = awaitingOff[ev.data1];
     if (ao.cell) {
-      auto dWall = walltime - ao.start;
-      if (dWall > maxDuration) dWall = maxDuration;
-      auto dNote = std::chrono::duration_cast<NoteDuration>(dWall);
+      auto dNote = now - ao.start;
+      if (dNote > maxDuration) dNote = maxDuration;
       if (dNote < minDuration) dNote = minDuration;
       ao.cell->duration = dNote;
       ao.cell = nullptr;
     }
   }
 
-  void startAwaitingOff(Cell* cell) {
-    finishAwaitingOff(cell->event);
+  void startAwaitingOff(EventInterval now, Cell* cell) {
+    finishAwaitingOff(now, cell->event);
     auto& ao = awaitingOff[cell->event.data1];
     ao.cell = cell;
-    ao.start = walltime;
+    ao.start = now;
   }
 
   void cancelAwatingOff(const Cell* cell) {
@@ -199,7 +68,7 @@ namespace {
 
   void clearAwatingOff() {
     for (auto& ao : awaitingOff)
-      ao = {nullptr, WallTime::zero()};
+      ao = {nullptr, EventInterval::zero()};
   }
 
 
@@ -233,15 +102,15 @@ namespace {
     }
   }
 
-  TimeInterval nextPendingOff() {
-    TimeInterval nextT = forever;
+  EventInterval nextPendingOff() {
+    EventInterval nextT = forever<EventInterval>;
     for (Cell *p = pendingOff; p; p = p->next())
       nextT = std::min(nextT, p->nextTime);
     return nextT;
   }
 
-  TimeInterval playPendingOff(TimeInterval dt) {
-    TimeInterval nextT = forever;
+  EventInterval playPendingOff(EventInterval dt) {
+    EventInterval nextT = forever<EventInterval>;
 
     for (Cell *p = pendingOff, *q = nullptr; p;) {
       if (dt < p->nextTime) {
@@ -269,18 +138,18 @@ namespace {
   const MidiEvent continueEvent(0xfb);
   const MidiEvent stopEvent(0xfc);
 
+  constexpr const EventInterval clockInterval = EventInterval::fromUnits<MidiClocks>(1);
+  static_assert(clockInterval.count() == 70,
+    "checking MidiClock interval in Spokes");
+
   class ClockLayer {
   public:
     ClockLayer() : running(false) { }
 
-    void set(TimeInterval length_, const Meter& meter) {
+    void set(EventInterval length_) {
       length = length_;
-      clockCount = meter.beats * 24 * 4 / meter.base;
-      clock = length / clockCount;
-
-      position = TimeInterval::zero();
-      nextClock = TimeInterval::zero();
-      clockNumber = 0;
+      position = EventInterval::zero();
+      nextClock = EventInterval::zero();
 
       running = true;
     }
@@ -290,30 +159,25 @@ namespace {
       player(stopEvent);
     }
 
-    TimeInterval next() const {
-      return running ? nextClock : forever;
+    EventInterval next() const {
+      return running ? nextClock : forever<EventInterval>;
     }
 
-    TimeInterval advance(TimeInterval dt) {
-      if (!running) return forever;
+    EventInterval advance(EventInterval dt) {
+      if (!running) return forever<EventInterval>;
 
       while (nextClock <= dt) {
         dt -= nextClock;
-        position = (position + nextClock) % length;
+        position += nextClock;
 
-        if (clockNumber == 0) {
+        if (position >= length) {
           player(stopEvent);
           player(startEvent);
+          position -= length;
         }
         player(clockEvent);
 
-        clockNumber += 1;
-        if (clockNumber == clockCount) {
-          clockNumber = 0;
-          nextClock = length - position;
-        } else {
-          nextClock = clock;
-        }
+        nextClock = std::min(clockInterval, length - position);
 
       }
       nextClock -= dt;
@@ -324,13 +188,9 @@ namespace {
   private:
     bool running;
 
-    TimeInterval length;
-    int clockCount;
-    TimeInterval clock;
-
-    TimeInterval position;
-    TimeInterval nextClock;
-    int clockNumber;
+    EventInterval length;
+    EventInterval position;
+    EventInterval nextClock;
   };
 
   ClockLayer clockLayer;
@@ -345,18 +205,18 @@ Layer::Layer()
 Layer::~Layer()
   { clear(); }
 
-TimeInterval Layer::next() const {
-  if (!recentCell) return forever;
-  if (recentCell->atEnd()) return forever;
+EventInterval Layer::next() const {
+  if (!recentCell) return forever<EventInterval>;
+  if (recentCell->atEnd()) return forever<EventInterval>;
   return recentCell->nextTime - timeSinceRecent;
 }
 
-TimeInterval Layer::advance(TimeInterval dt) {
-  TimeInterval nextT = forever;
+EventInterval Layer::advance(EventInterval dt) {
+  EventInterval nextT = forever<EventInterval>;
 
   if (recentCell) {
     if (recentCell->atEnd()) {
-      if (dt > TimeInterval::max() - timeSinceRecent) {
+      if (dt > forever<EventInterval> - timeSinceRecent) {
         clear();
       } else {
         timeSinceRecent += dt;
@@ -372,7 +232,7 @@ TimeInterval Layer::advance(TimeInterval dt) {
         Cell* nextCell = recentCell->next();
 
         dt -= recentCell->nextTime - timeSinceRecent;
-        timeSinceRecent = TimeInterval::zero();
+        timeSinceRecent = EventInterval::zero();
         recentCell = nextCell;
         playCell(*recentCell, muted, volume);
       }
@@ -385,7 +245,7 @@ TimeInterval Layer::advance(TimeInterval dt) {
   return nextT;
 }
 
-void Layer::addEvent(const MidiEvent& ev) {
+void Layer::addEvent(EventInterval now, const MidiEvent& ev) {
   muted = false;
     // TODO: Should we be doing this? how to communicate back to controller?
 
@@ -403,7 +263,7 @@ void Layer::addEvent(const MidiEvent& ev) {
   newCell->duration = NoteDuration::zero();
 
   if (ev.isNoteOn())
-    startAwaitingOff(newCell);
+    startAwaitingOff(now, newCell);
 
 /* FIXME
   if (!recentCell) {
@@ -437,16 +297,16 @@ void Layer::addEvent(const MidiEvent& ev) {
   }
 
   recentCell = newCell;
-  timeSinceRecent = TimeInterval::zero();
+  timeSinceRecent = EventInterval::zero();
 }
 
-bool Layer::keep(TimeInterval baseLength) {
+bool Layer::keep(EventInterval baseLength) {
   if (!firstCell) return false;
   if (!recentCell) return false;
-  if (length == TimeInterval::zero()) return false;
+  if (length == EventInterval::zero()) return false;
     // should never happen... but just in case
 
-  TimeInterval adj = syncLength(baseLength, length, timeSinceRecent);
+  EventInterval adj = syncLength(baseLength, length, timeSinceRecent);
 
   // closing the loop
   recentCell->link(firstCell);
@@ -457,7 +317,7 @@ bool Layer::keep(TimeInterval baseLength) {
   position = position % length;
 
   // advance into the start of the loop
-  advance(adj < TimeInterval::zero() ? -adj : TimeInterval::zero());
+  advance(adj < EventInterval::zero() ? -adj : EventInterval::zero());
   return true;
 }
 
@@ -476,9 +336,9 @@ void Layer::clear() {
   recentCell = nullptr;
   firstCell = nullptr;
 
-  timeSinceRecent = TimeInterval::zero();
-  length = TimeInterval::zero();
-  position = TimeInterval::zero();
+  timeSinceRecent = EventInterval::zero();
+  length = EventInterval::zero();
+  position = EventInterval::zero();
 
   muted = false;
   volume = 100;
@@ -492,30 +352,51 @@ bool Layer::looping() const {
 Loop::Loop()
   : midiClock(false),
     armed(true), layerCount(0), activeLayer(0), layerArmed(false),
-    layers(10)
+    layers(10),
+    epochTempo(120)
   {
     clearAwatingOff();
   }
 
 
-TimeInterval Loop::advance(TimeInterval dt) {
-  TimeInterval nextT = nextPendingOff();
+TimeInterval Loop::advance(WallTime w) {
+  if (w < nowWall) {
+    // Rollover of walltime?!
+    epochWall = w;
+    epochTime = nowTime;
+    nowWall = w;
+    return TimeInterval::zero();
+  }
+
+  auto elapsedWall = std::chrono::duration_cast<TimeInterval>(w - epochWall);
+  auto newTime = epochTime + epochTempo.toEventInterval(elapsedWall);
+  auto dT = newTime - nowTime;
+
+  // These updated just once at the start, not as the playing progresses
+  // in the code below.
+  nowTime = newTime;
+  nowWall = w;
+    // N.B.: This isn't _exactly_ where nowTime is.  That would be:
+    // epochWall + epochTempo.toTimeInterval(nowTime - epochTime)
+
+
+  EventInterval nextT = nextPendingOff();
   nextT = std::min(nextT, clockLayer.next());
   for (auto& l : layers)
     nextT = std::min(nextT, l.next());
 
-  while (dt > TimeInterval::zero()) {
-    TimeInterval et = std::min(dt, nextT);
+  while (dT > EventInterval::zero()) {
+    EventInterval stepT = std::min(dT, nextT);
 
-    nextT = playPendingOff(et);
-    nextT = std::min(nextT, clockLayer.advance(et));
+    nextT = playPendingOff(stepT);
+    nextT = std::min(nextT, clockLayer.advance(stepT));
     for (auto& l : layers)
-      nextT = std::min(nextT, l.advance(et));
+      nextT = std::min(nextT, l.advance(stepT));
 
-    dt -= et;
+    dT -= stepT;
   }
 
-  return nextT;
+  return epochTempo.toTimeInterval(nextT);
 }
 
 
@@ -523,12 +404,17 @@ void Loop::addEvent(const MidiEvent& ev) {
   if (ev.isNoteOff()) {
     // note off processing
     player(ev);
-    finishAwaitingOff(ev);
+    finishAwaitingOff(nowTime, ev);
     return;
   }
 
   if (armed) {
     clear();
+
+    epochWall = nowWall;
+    epochTime = EventInterval::zero();
+    nowTime = epochTime;
+
     armed = false;
   }
 
@@ -539,7 +425,7 @@ void Loop::addEvent(const MidiEvent& ev) {
     layerArmed = false;
   }
 
-  l.addEvent(ev);
+  l.addEvent(nowTime, ev);
 }
 
 
@@ -550,11 +436,12 @@ void Loop::keep() {
     return;
 
   if (layerCount == 1) {
-    auto m = meter;
-    if (m.unspecified())
-      m = estimateMeter(l.length, l.recentCell);
+    // FIXME
+    // auto m = meter;
+    // if (m.unspecified())
+    //   m = estimateTimeSignature(epochTempo, l.length, l.recentCell);
     if (midiClock)
-      clockLayer.set(l.length, m);
+      clockLayer.set(l.length);
   }
   activeLayer += activeLayer < (layers.size() - 1) ? 1 : 0;
   layerArmed = true;
@@ -593,7 +480,7 @@ void Loop::layerArm(int layer) {
   if (!(0 <= layer && layer < layers.size())) return;
 
   if (layerArmed && activeLayer == layer
-      && walltime < (armedTime + std::chrono::seconds(1))) {
+      && nowWall < (armedTime + std::chrono::seconds(1))) {
     // double press of the layer arm control
     layers[activeLayer].clear();
     return;
@@ -607,7 +494,7 @@ void Loop::layerArm(int layer) {
   // FIXME: what to do if still recording initial layer?
   activeLayer = layer;
   layerArmed = true;
-  armedTime = walltime;
+  armedTime = nowWall;
 
   layerCount = std::max(layerCount, activeLayer + 1);
 }
@@ -639,8 +526,8 @@ Loop::Status Loop::status() const {
       sl.position = l.position;
       sl.muted = l.muted;
     } else {
-      sl.length = TimeInterval::zero();
-      sl.position = TimeInterval::zero();
+      sl.length = EventInterval::zero();
+      sl.position = EventInterval::zero();
       sl.muted = false;
     }
   }
@@ -653,20 +540,6 @@ void Loop::begin(EventFunc p) {
   Cell::begin();
 }
 
-TimeInterval Loop::setTime(WallTime now) {
-  static WallTime pending(0);
-
-  if (now < walltime) return TimeInterval::zero();
-    // FIXME: Handle rollover of walltime?
-
-  pending += now - walltime;
-  walltime = now;
-
-  auto dt = std::chrono::duration_cast<TimeInterval>(pending);
-  pending -= dt;
-  return dt;
-}
-
 void Loop::allOffNow() {
-  playPendingOff(forever);
+  playPendingOff(forever<EventInterval>);
 }

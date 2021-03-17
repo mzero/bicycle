@@ -1,6 +1,7 @@
 #ifndef _INCLUDE_CELL_H_
 #define _INCLUDE_CELL_H_
 
+#include "metrictime.h"
 #include "types.h"
 
 typedef uint16_t CellIndex;
@@ -11,7 +12,7 @@ struct Cell {
 public:
   MidiEvent     event;
   NoteDuration  duration;
-  TimeInterval  nextTime;
+  EventInterval nextTime;
 
 private:
   CellIndex   nextCell;

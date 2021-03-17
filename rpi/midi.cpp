@@ -123,7 +123,7 @@ namespace {
   }
 
   bool AlsaMidi::poll(TimeInterval timeout) {
-    int t = (timeout == forever)
+    int t = (timeout == forever<TimeInterval>)
       ? -1
       : std::chrono::duration_cast<std::chrono::milliseconds>(timeout).count();
     auto r = ::poll(pfds, npfds, t);

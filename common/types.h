@@ -8,10 +8,6 @@
 
 // TIME
 
-using NoteDuration = std::chrono::duration<uint16_t, std::milli>;
-  // always positive or zero, okay for the resolution to be low
-  // maximum duration is about 65 seconds
-
 using TimeInterval = std::chrono::duration<int32_t, std::micro>;
   // interval between events
   // absolute maximum is about 35 minutes
@@ -20,11 +16,11 @@ using WallTime = std::chrono::microseconds;
   // covers well over 100 years... enough?
 
 
-constexpr NoteDuration minDuration = NoteDuration(1);
-constexpr NoteDuration maxDuration = NoteDuration::max();
 
-constexpr TimeInterval forever = TimeInterval::max();
+template< typename T >
+constexpr T forever = T::max();
 
+// MUSIC
 
 struct Meter {
   int beats = 0;

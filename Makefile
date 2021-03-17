@@ -53,7 +53,7 @@ $(eval $(call build_objects,\
 $(eval $(call build_objects,\
 	common,\
 	common,\
-	cell.cpp display.cpp looper.cpp message.cpp))
+	analysis.cpp cell.cpp display.cpp looper.cpp message.cpp))
 
 $(eval $(call build_objects,\
 	ClearUI,\

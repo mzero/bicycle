@@ -36,8 +36,8 @@ namespace {
     virtual void redraw() {
       uint16_t c = foreColor();
 
-      TimeInterval spanT(0);
-      TimeInterval keyPos(0);
+      EventInterval spanT(0);
+      EventInterval keyPos(0);
       int keyLayer = -1;
       for (int i = 0; i < currentStatus.layerCount; ++i) {
         auto& l = currentStatus.layers[i];
@@ -48,10 +48,10 @@ namespace {
         }
       }
 
-      if (spanT == TimeInterval::zero()) return;
+      if (spanT == EventInterval::zero()) return;
       const float scale = float(w) / spanT.count();
 
-      auto mapT = [&](TimeInterval t){
+      auto mapT = [&](EventInterval t){
         return int16_t(std::round(t.count() * scale));
       };
 
@@ -65,9 +65,9 @@ namespace {
 
       for (int i = 0; i < currentStatus.layerCount; ++i) {
         auto& l = currentStatus.layers[i];
-        if (l.length != TimeInterval::zero()) {
-          TimeInterval ls = keyPos - l.position;
-          TimeInterval ll = l.length;
+        if (l.length != EventInterval::zero()) {
+          EventInterval ls = keyPos - l.position;
+          EventInterval ll = l.length;
 
           int16_t lx = x + mapT(ls);
           int16_t lw = mapT(ll);
@@ -80,7 +80,7 @@ namespace {
           display.drawFastVLine(lx+lw-1, ly, 3, c);
           display.drawFastVLine(px, ly, 3, c);
         }
-        
+
         ly += (i % 3 == 2) ? 7 : 4;
       }
     }
@@ -134,19 +134,18 @@ namespace {
   };
 
 
-  class LengthField : public ValueField<TimeInterval> {
+  class LengthField : public ValueField<EventInterval> {
   public:
     LengthField(int16_t x, int16_t y, uint16_t w, uint16_t h)
-      : ValueField<TimeInterval>(x, y, w, h) { }
+      : ValueField<EventInterval>(x, y, w, h) { }
   protected:
-    void drawValue(const TimeInterval& t) const {
-      using Tenths = std::chrono::duration<int, std::deci>;
-
-      auto tenths = std::chrono::duration_cast<Tenths>(t).count();
-      display.printf("%2d.%1ds", tenths / 10, tenths % 10);
+    void drawValue(const EventInterval& t) const {
+      float p = t.inPulses();
+      int i10 = int(round(p*10.0f));
+      display.printf("%3d.%1ds", i10 / 10, i10 % 10);
     }
-    TimeInterval getValue() const {
-      TimeInterval spanT(0);
+    EventInterval getValue() const {
+      EventInterval spanT(0);
       for (int i = 0; i < currentStatus.layerCount; ++i)
         spanT = std::max(spanT, currentStatus.layers[i].length);
       return spanT;
