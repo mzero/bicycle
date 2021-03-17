@@ -3,7 +3,13 @@
         {
             "name": "Linux",
             "includePath": [
-                "${default}"
+                "${default}",
+                "${workspaceFolder}/common",
+                "${workspaceFolder}/lard",
+                "${workspaceFolder}/rpi",
+                "${workspaceFolder}/../ClearUI/src",
+                "${workspaceFolder}/../ext/Adafruit-GFX-Library",
+                "${workspaceFolder}/../ext/Adafruit_SSD1306"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
