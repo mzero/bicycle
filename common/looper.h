@@ -27,6 +27,8 @@ public:
   void clear();
   bool looping() const;
 
+  void retime(const Tempo& from, const Tempo& to);
+
   bool muted;
   uint8_t volume;
 
@@ -59,6 +61,7 @@ public:
   void layerRearm();
 
   void enableMidiClock(bool);
+  void setTempo(const Tempo&);
   void setMeter(const Meter&);
 
   struct LayerStatus {

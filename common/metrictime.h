@@ -91,6 +91,10 @@ public:
     return MetricDuration(-_count);
   }
 
+  MetricDuration retime(double rate) {
+    return MetricDuration(std::round(_count * rate));
+  }
+
 private:
   Rep _count;
 
@@ -241,6 +245,10 @@ public:
 
     double count = t.count() * rate * Conv::num / Conv::den;
     return EventInterval(std::round(count));
+  }
+
+  static double retimeRate(const Tempo& from, const Tempo& to) {
+    return to.rate / from.rate;
   }
 
 private:

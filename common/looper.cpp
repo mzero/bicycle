@@ -349,6 +349,54 @@ bool Layer::looping() const {
   return firstCell == nullptr;
 }
 
+void Layer::retime(const Tempo& from, const Tempo& to) {
+  double r = Tempo::retimeRate(from, to);
+  fprintf(stderr, "retime ratio is %8.4f\n", r);
+
+  Cell* start = firstCell ? firstCell : recentCell;
+
+  auto p = start;
+  EventInterval oldEventStart(0);
+  EventInterval newEventStart(0);
+  while (p) {
+    EventInterval oldEventEnd = oldEventStart + p->duration;
+    EventInterval newEventEnd = oldEventEnd.retime(r);
+
+    EventInterval oldNextEvent = oldEventStart + p->nextTime;
+    EventInterval newNextEvent = oldNextEvent.retime(r);
+
+    Cell oldCell = *p;
+
+    p->duration = NoteDuration(newEventEnd - newEventStart);
+      // FIXME: limit to legal range of durations
+    p->nextTime = newNextEvent - newEventStart;
+
+    fprintf(stderr, "  @ %6d/%6d: dur = %6d/%6d (Δ%6d/%6d) next = %6d/%6d (Δ%6d/%6d)\n",
+      oldEventStart.count(), newEventStart.count(),
+      oldEventEnd.count(), newEventEnd.count(),
+      oldCell.duration.count(), p->duration.count(),
+      oldNextEvent.count(), newNextEvent.count(),
+      oldCell.nextTime.count(), p->nextTime.count());
+
+    oldEventStart = oldNextEvent;
+    newEventStart = newNextEvent;
+
+    p = p->next();
+    if (p == start) break;
+  }
+
+  fprintf(stderr, "  old: len %6d, pos %6d, tsr %6d\n",
+    length.count(), position.count(), timeSinceRecent.count());
+
+  length = newEventStart;
+  position = position.retime(r);
+  timeSinceRecent = timeSinceRecent.retime(r);
+
+  fprintf(stderr, "  new: len %6d, pos %6d, tsr %6d\n",
+    length.count(), position.count(), timeSinceRecent.count());
+
+}
+
 Loop::Loop()
   : midiClock(false),
     armed(true), layerCount(0), activeLayer(0), layerArmed(false),
@@ -436,10 +484,15 @@ void Loop::keep() {
     return;
 
   if (layerCount == 1) {
-    // FIXME
-    // auto m = meter;
-    // if (m.unspecified())
-    //   m = estimateTimeSignature(epochTempo, l.length, l.recentCell);
+    // FIXME: handle when the meter and/or bpm is fixed
+
+    TimeSignature ts = estimateTimeSignature(
+      epochTempo, l.length, l.recentCell);
+
+    l.retime(epochTempo, ts.tempo);
+    setTempo(ts.tempo);
+    setMeter(ts.meter);
+
     if (midiClock)
       clockLayer.set(l.length);
   }
@@ -505,6 +558,15 @@ void Loop::layerRearm() {
 
 void Loop::enableMidiClock(bool b) {
   midiClock = b;
+}
+
+void Loop::setTempo(const Tempo& newTempo) {
+  // Carefully reset the epoch, using the current tempo, to where
+  // the metric time is now.  N.B.: Don't use nowWall, as that is not
+  // kept in perfect sync with nowTime. (See advance() for details.)
+  epochWall += epochTempo.toTimeInterval(nowTime - epochTime);
+  epochTime = nowTime;
+  epochTempo = newTempo;
 }
 
 void Loop::setMeter(const Meter& m) {
