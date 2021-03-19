@@ -43,6 +43,37 @@ private:
   friend class Loop;
 };
 
+enum class TempoMode {
+  begin = 0,
+  inferred = begin,
+  locked,
+  synced,
+  end
+};
+
+struct TimingSpec {
+  Tempo         tempo;        // tempo currently playing
+  Tempo         lowTempo;     // low range of tempo estimates
+  Tempo         highTempo;    // high range of tempo estimates
+
+  TempoMode     tempoMode;
+
+  Meter         meter;        // meter currently playing
+  bool          lockedMeter;  // layer timing will be locked to given meter
+
+  TimingSpec()
+    : tempo(120.0), lowTempo(75.0), highTempo(140.0),
+      tempoMode(TempoMode::inferred),
+      meter{4, 4},
+      lockedMeter(false)
+      { }
+
+  EventInterval baseLength() const {
+    using Factor = std::ratio_divide<WholeNotes, EventInterval::Units>;
+    return EventInterval(meter.beats * Factor::num / meter.base / Factor::den);
+  }
+};
+
 
 class Loop {
 public:
@@ -60,9 +91,14 @@ public:
   void layerArm(int layer);   // start overwriting this layer on next event
   void layerRearm();
 
+  Tempo getTempo() const;
+  void setTempo(Tempo);
+
+  TimingSpec getTimingSpec() const;
+  void setTimingSpec(const TimingSpec&);
+    // note: does not change tempo, use setTempo()
+
   void enableMidiClock(bool);
-  void setTempo(const Tempo&);
-  void setMeter(const Meter&);
 
   struct LayerStatus {
     EventInterval length;
@@ -93,7 +129,7 @@ private:
   WallTime      nowWall;
   EventInterval nowTime;
 
-  Meter meter;
+  TimingSpec    timingSpec;
 
   bool midiClock;
   bool armed;

@@ -12,7 +12,12 @@ namespace Args {
   extern bool configCheckOnly;
 
   extern bool sendMidiClock;
+  extern bool receiveMidiClock;
 
+  extern bool tempoSet;
+  extern double tempoBPM;
+
+  extern bool meterSet;
   extern int meterBeats;  // 0 means unspecified
   extern int meterBase;
 

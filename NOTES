@@ -2,6 +2,35 @@
 Bicycle To Do
 =============
 
+Flexible Timing
+---------------
+[] midi controls of timing spec
+	[] hi/lo tempo
+	[] tempo (0 = inferred, otherwise locked)
+	[] meter beats (0 =  unlocked, otherwise locked)
+	[] meter base
+
+[] pass tempo spec to estimator
+[] return from estimator
+  [] get tempo back from estimator
+	[] get meter / base length back from estimator
+[] use base length, not meter, in track adjustors
+[] adjust first track! (so if meter & tempo set, it snaps)
+
+[] snag clock estimator from Pulsar Buddy
+[] feed MIDI events to estimator
+[] expose position to estimator
+[] accept tempo updates from estimator
+
+[] display tempo in a field all the time
+[x] Message on new timing spec
+
+[] MIDI channel indicators under track icons
+
+
+
+[] set tempo hi/lo from command line (?)
+
 On Deck
 -------
 [] awaiting off table needs to be by note & channel

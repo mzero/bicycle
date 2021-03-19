@@ -106,10 +106,25 @@ void setup() {
 
   midi.begin();
   theLoop.begin(playEvent);
-  theLoop.enableMidiClock(Args::sendMidiClock);
 
-  Meter meter = { Args::meterBeats, Args::meterBase };
-  theLoop.setMeter(meter);
+  TimingSpec ts = theLoop.getTimingSpec();
+
+  theLoop.enableMidiClock(Args::sendMidiClock);
+  if (Args::tempoSet) {
+    ts.tempo = Tempo(Args::tempoBPM);
+    ts.tempoMode = TempoMode::locked;
+  }
+  if (Args::receiveMidiClock)
+    ts.tempoMode = TempoMode::synced;
+  if (Args::meterSet) {
+    ts.meter.base = Args::meterBase;
+    ts.meter.beats = Args::meterBeats;
+    ts.lockedMeter = true;
+  }
+
+  theLoop.setTimingSpec(ts);
+  if (Args::tempoSet)
+    theLoop.setTempo(ts.tempo);
 }
 
 void teardown() {

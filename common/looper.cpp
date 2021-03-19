@@ -490,8 +490,8 @@ void Loop::keep() {
       epochTempo, l.length, l.recentCell);
 
     l.retime(epochTempo, ts.tempo);
+    timingSpec.meter = ts.meter;
     setTempo(ts.tempo);
-    setMeter(ts.meter);
 
     if (midiClock)
       clockLayer.set(l.length);
@@ -556,21 +556,54 @@ void Loop::layerRearm() {
   layerArm(activeLayer);
 }
 
-void Loop::enableMidiClock(bool b) {
-  midiClock = b;
+
+Tempo Loop::getTempo() const {
+  return epochTempo;
 }
 
-void Loop::setTempo(const Tempo& newTempo) {
+void Loop::setTempo(Tempo newTempo) {
   // Carefully reset the epoch, using the current tempo, to where
   // the metric time is now.  N.B.: Don't use nowWall, as that is not
   // kept in perfect sync with nowTime. (See advance() for details.)
   epochWall += epochTempo.toTimeInterval(nowTime - epochTime);
   epochTime = nowTime;
   epochTempo = newTempo;
+
+  timingSpec.tempo = newTempo;
 }
 
-void Loop::setMeter(const Meter& m) {
-  meter = m;
+TimingSpec Loop::getTimingSpec() const {
+  return timingSpec;
+}
+
+void Loop::setTimingSpec(const TimingSpec& ts) {
+  timingSpec = ts;
+  timingSpec.tempo = epochTempo;
+
+  {
+    Message msg;
+    switch (ts.tempoMode) {
+      case TempoMode::inferred:
+        msg << int(ts.lowTempo.inBPM()) << '~' << int(ts.highTempo.inBPM());
+        break;
+      case TempoMode::locked:
+        msg << int(ts.tempo.inBPM()) << '!';
+        break;
+      case TempoMode::synced:
+        msg << "sync";
+        break;
+      default:
+        msg << int(ts.tempo.inBPM()) << '!';
+    }
+
+    msg << ' ' << ts.meter.beats << '/' << ts.meter.base;
+    if (ts.lockedMeter)
+      msg << '!';
+  }
+}
+
+void Loop::enableMidiClock(bool enable) {
+  midiClock = enable;
 }
 
 Loop::Status Loop::status() const {
