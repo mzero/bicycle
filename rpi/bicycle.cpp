@@ -24,6 +24,11 @@ void playEvent(const MidiEvent& ev) {
   midi.sendSynth(ev);
 }
 
+Tempo mapTempoCC(uint8_t v) {
+  double t = 30.0 * std::exp(double(v)/55.0);
+  return Tempo(t);
+};
+
 void noteEvent(const MidiEvent& ev) {
 
   Command cmd = Configuration::command(ev);
@@ -40,6 +45,46 @@ void noteEvent(const MidiEvent& ev) {
     case Action::layerArm:    if (ev.data2) theLoop.layerArm(cmd.layer);    return;
     case Action::layerMute:   theLoop.layerMute(cmd.layer, ev.data2 != 0);  return;
     case Action::layerVolume: theLoop.layerVolume(cmd.layer, ev.data2);     return;
+
+    case Action::tempoLow: {
+      TimingSpec ts = theLoop.getTimingSpec();
+      ts.lowTempo = mapTempoCC(ev.data2);
+      theLoop.setTimingSpec(ts);
+      return;
+    }
+    case Action::tempoHigh: {
+      TimingSpec ts = theLoop.getTimingSpec();
+      ts.highTempo = mapTempoCC(ev.data2);
+      theLoop.setTimingSpec(ts);
+      return;
+    }
+    case Action::tempo: {
+      TimingSpec ts = theLoop.getTimingSpec();
+      switch (ev.data2) {
+        case 0:   ts.tempoMode = TempoMode::inferred; break;
+        case 127: ts.tempoMode = TempoMode::synced; break;
+        default:  ts.tempoMode = TempoMode::locked;
+                  ts.tempo = mapTempoCC(ev.data2);
+                  theLoop.setTempo(ts.tempo);
+      }
+      theLoop.setTimingSpec(ts);
+      return;
+    }
+    case Action::meterBase: {
+      TimingSpec ts = theLoop.getTimingSpec();
+      ts.meter.base = 1 << (ev.data2 / 26);
+      theLoop.setTimingSpec(ts);
+      return;
+    }
+    case Action::meterBeats: {
+      TimingSpec ts = theLoop.getTimingSpec();
+      ts.lockedMeter = ev.data2 != 0;
+      ts.meter.beats = 1 + (ev.data2 / 8);
+      theLoop.setTimingSpec(ts);
+      return;
+    }
+
+
   }
 
   switch (ev.status & 0xf0) {

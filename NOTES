@@ -4,11 +4,11 @@ Bicycle To Do
 
 Flexible Timing
 ---------------
-[] midi controls of timing spec
-	[] hi/lo tempo
-	[] tempo (0 = inferred, otherwise locked)
-	[] meter beats (0 =  unlocked, otherwise locked)
-	[] meter base
+[x] midi controls of timing spec
+	[x] hi/lo tempo
+	[x] tempo (0 = inferred, otherwise locked)
+	[x] meter beats (0 =  unlocked, otherwise locked)
+	[x] meter base
 
 [] pass tempo spec to estimator
 [] return from estimator

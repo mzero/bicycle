@@ -19,7 +19,13 @@ enum class Action : char {
 
     layerArm,
     layerMute,
-    layerVolume
+    layerVolume,
+
+    tempoLow,
+    tempoHigh,
+    tempo,
+    meterBeats,
+    meterBase
 };
 
 struct Command {

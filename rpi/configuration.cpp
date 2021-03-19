@@ -54,6 +54,13 @@ namespace {
       case Action::layerArm:    return s << "layerArm";
       case Action::layerMute:   return s << "layerMute";
       case Action::layerVolume: return s << "layerVolume";
+
+      case Action::tempoLow:    return s << "tempoLow";
+      case Action::tempoHigh:   return s << "tempoHigh";
+      case Action::tempo:       return s << "tempo";
+      case Action::meterBeats:  return s << "meterBeats";
+      case Action::meterBase:   return s << "meterBase";
+
       default:                  return s << "???";
     }
   }
@@ -132,7 +139,7 @@ namespace {
     std::smatch m;
 
     static const std::regex actionRE(
-      "(ignore|arm|clear|keep|rearm|good|bad|mute|volume)"
+      "(\\w+)"
       "\\s*(?:\\[(\\d+)(?:\\.\\.(\\d+))?\\])?");
     if (!std::regex_match(actionStr, m, actionRE))
       throw Parse(Error() << "malformed action '" << actionStr << "'");
@@ -151,6 +158,11 @@ namespace {
     else if (actionVerb == "bad")       action = Action::bad;
     else if (actionVerb == "mute")      action = Action::layerMute;
     else if (actionVerb == "volume")    action = Action::layerVolume;
+    else if (actionVerb == "tempoLow")  action = Action::tempoLow;
+    else if (actionVerb == "tempoHigh") action = Action::tempoHigh;
+    else if (actionVerb == "tempo")     action = Action::tempo;
+    else if (actionVerb == "meterBeats")action = Action::meterBeats;
+    else if (actionVerb == "meterBase") action = Action::meterBase;
     else
       throw Parse(Error() << "unrecognized action '" << actionVerb);
 
