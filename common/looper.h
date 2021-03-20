@@ -23,11 +23,14 @@ public:
   EventInterval advance(EventInterval);
 
   void addEvent(EventInterval, const MidiEvent&);
-  bool keep(EventInterval baseLength = EventInterval::zero());
+  bool keep();
   void clear();
+
   bool looping() const;
+  bool empty() const;
 
   void retime(const Tempo& from, const Tempo& to);
+  void resize(EventInterval baseLength);
 
   bool muted;
   uint8_t volume;

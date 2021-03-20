@@ -15,7 +15,7 @@ struct TimeSignature {
 
 
 TimeSignature estimateTimeSignature(
-    Tempo recTempo, EventInterval recLength, const Cell* firstCell);
+    const TimingSpec& ts, EventInterval recLength, const Cell* firstCell);
 
 
 #endif // _INCLUDE_ANALYSIS_H_

@@ -300,26 +300,20 @@ void Layer::addEvent(EventInterval now, const MidiEvent& ev) {
   timeSinceRecent = EventInterval::zero();
 }
 
-bool Layer::keep(EventInterval baseLength) {
+bool Layer::keep() {
   if (!firstCell) return false;
   if (!recentCell) return false;
   if (length == EventInterval::zero()) return false;
     // should never happen... but just in case
 
-  EventInterval adj = syncLength(baseLength, length, timeSinceRecent);
-
   // closing the loop
   recentCell->link(firstCell);
-  recentCell->nextTime = timeSinceRecent + adj;
+  recentCell->nextTime = timeSinceRecent;
   firstCell = nullptr;
 
-  length += adj;
-  position = position % length;
-
-  // advance into the start of the loop
-  advance(adj < EventInterval::zero() ? -adj : EventInterval::zero());
   return true;
 }
+
 
 void Layer::clear() {
   Cell* start = firstCell ? firstCell : recentCell;
@@ -347,6 +341,10 @@ void Layer::clear() {
 
 bool Layer::looping() const {
   return firstCell == nullptr;
+}
+
+bool Layer::empty() const {
+  return recentCell == nullptr;
 }
 
 void Layer::retime(const Tempo& from, const Tempo& to) {
@@ -395,6 +393,24 @@ void Layer::retime(const Tempo& from, const Tempo& to) {
   fprintf(stderr, "  new: len %6d, pos %6d, tsr %6d\n",
     length.count(), position.count(), timeSinceRecent.count());
 
+}
+
+// FIXME: There is a relationship between keep() and resize() - they should
+// be called in order to "finalize" a layer.  This should be better refactored
+// so that Layer can't end up in a bad state.
+
+void Layer::resize(EventInterval baseLength) {
+  EventInterval adj = syncLength(baseLength, length, timeSinceRecent);
+
+  fprintf(stderr, "Layer::resize: resize(%d) adjusting by %d\n",
+    baseLength.count(), adj.count());
+
+  recentCell->nextTime += adj;
+  length += adj;
+  position = position % length;
+
+  // advance into the start of the loop
+  advance(adj < EventInterval::zero() ? -adj : EventInterval::zero());
 }
 
 Loop::Loop()
@@ -480,22 +496,27 @@ void Loop::addEvent(const MidiEvent& ev) {
 void Loop::keep() {
   Layer& l = layers[activeLayer];   // TODO: bounds check
 
-  if (!l.keep(layers[activeLayer ? 0 : 1].length))
+  if (!l.keep())
     return;
 
   if (layerCount == 1) {
-    // FIXME: handle when the meter and/or bpm is fixed
+    if (timingSpec.tempoMode == TempoMode::inferred) {
+      TimeSignature ts = estimateTimeSignature(
+          timingSpec, l.length, l.recentCell);
 
-    TimeSignature ts = estimateTimeSignature(
-      epochTempo, l.length, l.recentCell);
+      l.retime(epochTempo, ts.tempo);
+      setTempo(ts.tempo);
 
-    l.retime(epochTempo, ts.tempo);
-    timingSpec.meter = ts.meter;
-    setTempo(ts.tempo);
-
-    if (midiClock)
-      clockLayer.set(l.length);
+      if (!timingSpec.lockedMeter)
+        timingSpec.meter = ts.meter;
+    }
   }
+
+  l.resize(timingSpec.baseLength());
+
+  if (midiClock)
+    clockLayer.set(l.length);
+
   activeLayer += activeLayer < (layers.size() - 1) ? 1 : 0;
   layerArmed = true;
   layerCount = std::max(layerCount, activeLayer + 1);

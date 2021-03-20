@@ -4,7 +4,7 @@
 
 #include "cell.h"
 #include "message.h"
-#include "types.h"
+#include "metrictime.h"
 
 
 EventInterval syncLength(
@@ -72,31 +72,42 @@ float beatError(float x) {
 
 
 TimeSignature estimateTimeSignature(
-    Tempo recTempo, EventInterval recLength, const Cell* firstCell) {
-  constexpr float minBPM = 75; // 85;
-  constexpr float maxBPM = 140; // 2 * minBPM;
+    const TimingSpec& spec, EventInterval recLength, const Cell* firstCell) {
+
+  Meter meter = spec.meter;
+  if (!spec.lockedMeter) meter.beats = 1;
+
+  EventInterval baseUnit =
+    EventInterval::fromUnits<WholeNotes>(1) * meter.beats / meter.base;
 
   using Seconds = std::chrono::duration<float>;
-  constexpr Seconds maxQnote = std::chrono::minutes(1) / minBPM;
-  constexpr Seconds minQnote = std::chrono::minutes(1) / maxBPM;
+  Seconds maxBaseSec = spec.lowTempo.toTimeInterval(baseUnit);
+  Seconds minBaseSec = spec.highTempo.toTimeInterval(baseUnit);
 
-  Seconds basef(recTempo.toTimeInterval(recLength));
+  Seconds phraseSec(spec.tempo.toTimeInterval(recLength));
 
-  int minMN = int(ceilf(basef / maxQnote));
-  int maxMN = int(floorf(basef / minQnote));
+  int minN = int(ceilf(phraseSec / maxBaseSec));
+  int maxN = int(floorf(phraseSec / minBaseSec));
 
-  int bestMN = 0;
+  fprintf(stderr, "est: meter            %d/%d\n", meter.beats, meter.base);
+  fprintf(stderr, "     baseUnit count   %d\n", baseUnit.count());
+  fprintf(stderr, "     baseSec range    %6.4fs ~ %6.4fs\n",
+    minBaseSec.count(), maxBaseSec.count());
+  fprintf(stderr, "     phraseSec        %6.4fs\n", phraseSec.count());
+  fprintf(stderr, "     range of N       %d ~ %d\n", minN, maxN);
+
+  int bestN = 0;
   float bestErr = INFINITY;
 
-  for (int mn = minMN; mn <= maxMN; ++mn) {
-    const Seconds qn = basef / mn;
+  for (int n = minN; n <= maxN; ++n) {
+    const Seconds qn = phraseSec / n;
     const float qnf = qn.count();
 
     float err = 0.0f;
     auto p = firstCell;
     EventInterval t(0);
     while (p) {
-      Seconds ts(recTempo.toTimeInterval(t));
+      Seconds ts(spec.tempo.toTimeInterval(t));
       float tf = ts.count();
       err += beatError(tf / qnf);
       if (err > bestErr) break;
@@ -107,7 +118,7 @@ TimeSignature estimateTimeSignature(
     }
 
     if (err < bestErr) {
-      bestMN = mn;
+      bestN = n;
       bestErr = err;
     }
   }
@@ -116,26 +127,46 @@ TimeSignature estimateTimeSignature(
     Log log;
     log << "layer deltas: ";
     auto p = firstCell;
+    EventInterval t(0);
     while (p) {
       log << p->nextTime.count() << ",";
+      t += p->nextTime;
       p = p->next();
       if (p == firstCell) break;
     }
+    log << " = " << t.count();
   }
 
-  if (bestMN == 0)
-    bestMN = 1; // should never happen, but just to be safe
+  if (bestN == 0)
+    bestN = 1; // should never happen, but just to be safe
 
-  float bestBPM = std::chrono::minutes(1) / (basef / bestMN);
+  float baseBeats = baseUnit.inUnits<QuarterNotes>();
+  float phrasePerMinute = std::chrono::minutes(1) / phraseSec;
+  float phraseBPM = phrasePerMinute * bestN * baseBeats;
+
+  fprintf(stderr, "est: baseBeats         %8.2f\n", baseBeats);
+  fprintf(stderr, "     phrasePerMinute   %8.2f\n", phrasePerMinute);
+  fprintf(stderr, "     phraseBPM         %8.2f\n", phraseBPM);
 
   {
     Log log;
-    log << "meter: " << bestMN << "beats ("
-      << minMN << "," << maxMN << ") @ " << bestBPM << " bpm";
+    log << "meter: ";
+    if (meter.beats == 1)
+      log << bestN << '/' << meter.base;
+    else
+      log << bestN << '*' << meter.beats << '/' << meter.base;
+    log << " (" << minN << "," << maxN << ") @ "
+      << phraseBPM << " bpm";
 
     Message msg;
-    msg << bestMN << " @ " << static_cast<int>(bestBPM) << " bpm";
+
+    if (meter.beats == 1)
+      msg << bestN << '/' << meter.base;
+    else
+      msg << bestN << '*' << meter.beats << '/' << meter.base;
+
+    msg << " @ " << static_cast<int>(phraseBPM) << " bpm";
   }
 
-  return { Tempo(bestBPM), { bestMN, 4 } };
+  return { Tempo(phraseBPM), { bestN, meter.base } };
 }
