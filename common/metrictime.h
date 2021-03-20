@@ -179,6 +179,21 @@ operator%(const MetricDuration<Rep1>& lhs,
   return MetricDuration<RepC>(RepC(lhs.count()) % RepC(rhs.count()));
 }
 
+template< class Rep, class Num >
+constexpr MetricDuration<std::common_type_t<Rep, Num>>
+operator*(const MetricDuration<Rep>& lhs, Num& rhs)
+{
+  using RepC = std::common_type_t<Rep, Num>;
+  return MetricDuration<RepC>(RepC(lhs.count()) * RepC(rhs));
+}
+
+template< class Rep, class Num >
+constexpr MetricDuration<std::common_type_t<Rep, Num>>
+operator/(const MetricDuration<Rep>& lhs, Num& rhs)
+{
+  using RepC = std::common_type_t<Rep, Num>;
+  return MetricDuration<RepC>(RepC(lhs.count()) / RepC(rhs));
+}
 
 
 /***
