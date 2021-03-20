@@ -4,18 +4,13 @@ Bicycle To Do
 
 Flexible Timing
 ---------------
-[x] midi controls of timing spec
-	[x] hi/lo tempo
-	[x] tempo (0 = inferred, otherwise locked)
-	[x] meter beats (0 =  unlocked, otherwise locked)
-	[x] meter base
-
-[] pass tempo spec to estimator
-[] return from estimator
-  [] get tempo back from estimator
-	[] get meter / base length back from estimator
-[] use base length, not meter, in track adjustors
+[x] pass tempo spec to estimator
+[x] return from estimator
+  [x] get tempo back from estimator
+	[x] get meter / base length back from estimator
+[x] use base length, not meter, in track adjustors
 [] adjust first track! (so if meter & tempo set, it snaps)
+[] ? use meter.beats = 1 to mean no lock... or rather always lock!
 
 [] snag clock estimator from Pulsar Buddy
 [] feed MIDI events to estimator
@@ -23,13 +18,14 @@ Flexible Timing
 [] accept tempo updates from estimator
 
 [] display tempo in a field all the time
-[x] Message on new timing spec
 
 [] MIDI channel indicators under track icons
 
 
 
 [] set tempo hi/lo from command line (?)
+[] when to use float, when to use double?
+	- should this be keyed on processor?
 
 On Deck
 -------
