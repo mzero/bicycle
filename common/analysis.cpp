@@ -168,5 +168,5 @@ TimeSignature estimateTimeSignature(
     msg << " @ " << static_cast<int>(phraseBPM) << " bpm";
   }
 
-  return { Tempo(phraseBPM), { bestN, meter.base } };
+  return { Tempo(phraseBPM), { bestN * meter.beats, meter.base } };
 }

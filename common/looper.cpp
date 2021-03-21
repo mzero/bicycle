@@ -509,13 +509,29 @@ void Loop::keep() {
 
       if (!timingSpec.lockedMeter)
         timingSpec.meter = ts.meter;
+
+      l.resize(EventInterval::zero());
+    } else {
+      if (!timingSpec.lockedMeter) {
+        timingSpec.meter.beats = 1;
+        l.resize(timingSpec.baseLength());
+        timingSpec.meter.beats =
+          l.length.count() / timingSpec.baseLength().count();
+      }
+      else {
+        l.resize(timingSpec.baseLength());
+      }
     }
+
+    if (midiClock)
+      clockLayer.set(l.length);
+
+    fprintf(stderr, "first layer: %6.2fbpm, %d/%d\n",
+      timingSpec.tempo.inBPM(), timingSpec.meter.beats, timingSpec.meter.base);
   }
-
-  l.resize(timingSpec.baseLength());
-
-  if (midiClock)
-    clockLayer.set(l.length);
+  else {
+    l.resize(timingSpec.baseLength());
+  }
 
   activeLayer += activeLayer < (layers.size() - 1) ? 1 : 0;
   layerArmed = true;
