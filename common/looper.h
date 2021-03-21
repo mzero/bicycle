@@ -10,10 +10,6 @@
 #include "types.h"
 
 
-typedef void (*EventFunc)(const MidiEvent&);
-  // TODO: Needs time somehow? delta? absolute?
-
-
 class Layer {
 public:
   Layer();

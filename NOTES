@@ -9,23 +9,23 @@ Flexible Timing
   [x] get tempo back from estimator
 	[x] get meter / base length back from estimator
 [x] use base length, not meter, in track adjustors
-[] adjust first track! (so if meter & tempo set, it snaps)
-[] ? use meter.beats = 1 to mean no lock... or rather always lock!
+[x] adjust first track! (so if meter & tempo set, it snaps)
 
 [] snag clock estimator from Pulsar Buddy
 [] feed MIDI events to estimator
 [] expose position to estimator
 [] accept tempo updates from estimator
 
-[] display tempo in a field all the time
+[] display tempo & meter in a field all the time
 
 [] MIDI channel indicators under track icons
-
 
 
 [] set tempo hi/lo from command line (?)
 [] when to use float, when to use double?
 	- should this be keyed on processor?
+[] take out all the debugging fprintf() calls
+
 
 On Deck
 -------

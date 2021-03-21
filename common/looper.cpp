@@ -7,6 +7,7 @@
 
 #include "analysis.h"
 #include "cell.h"
+#include "clock.h"
 #include "message.h"
 #include "types.h"
 
@@ -132,68 +133,6 @@ namespace {
 
     return nextT;
   }
-
-  const MidiEvent clockEvent(0xf8);
-  const MidiEvent startEvent(0xfa);
-  const MidiEvent continueEvent(0xfb);
-  const MidiEvent stopEvent(0xfc);
-
-  constexpr const EventInterval clockInterval = EventInterval::fromUnits<MidiClocks>(1);
-  static_assert(clockInterval.count() == 70,
-    "checking MidiClock interval in Spokes");
-
-  class ClockLayer {
-  public:
-    ClockLayer() : running(false) { }
-
-    void set(EventInterval length_) {
-      length = length_;
-      position = EventInterval::zero();
-      nextClock = EventInterval::zero();
-
-      running = true;
-    }
-
-    void clear() {
-      running = false;
-      player(stopEvent);
-    }
-
-    EventInterval next() const {
-      return running ? nextClock : forever<EventInterval>;
-    }
-
-    EventInterval advance(EventInterval dt) {
-      if (!running) return forever<EventInterval>;
-
-      while (nextClock <= dt) {
-        dt -= nextClock;
-        position += nextClock;
-
-        if (position >= length) {
-          player(stopEvent);
-          player(startEvent);
-          position -= length;
-        }
-        player(clockEvent);
-
-        nextClock = std::min(clockInterval, length - position);
-
-      }
-      nextClock -= dt;
-      position += dt;  // no need to % length, can't roll here!
-      return nextClock;
-    }
-
-  private:
-    bool running;
-
-    EventInterval length;
-    EventInterval position;
-    EventInterval nextClock;
-  };
-
-  ClockLayer clockLayer;
 }
 
 Layer::Layer()
@@ -670,6 +609,7 @@ Loop::Status Loop::status() const {
 void Loop::begin(EventFunc p) {
   player = p;
   Cell::begin();
+  ClockLayer::setPlayer(p);
 }
 
 void Loop::allOffNow() {

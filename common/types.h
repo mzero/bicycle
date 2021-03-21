@@ -58,5 +58,8 @@ union MidiEvent {
 };
 
 
+typedef void (*EventFunc)(const MidiEvent&);
+
+
 
 #endif // _INCLUDE_TYPES_H_
