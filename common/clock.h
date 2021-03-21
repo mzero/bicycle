@@ -8,11 +8,14 @@ class ClockLayer {
 public:
   ClockLayer();
 
-  void set(EventInterval length_);
-  void clear();
+  void syncStart(EventInterval);
+  void stop();
+  void resize(EventInterval);
 
   EventInterval next() const;
   EventInterval advance(EventInterval dt);
+
+  bool isRunning() const { return running; }
 
 private:
   bool running;

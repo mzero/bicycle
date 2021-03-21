@@ -32,7 +32,7 @@ namespace {
   }
 
 
-  EventFunc player;
+  EventFunc player = nullptr;
 
 
   struct AwaitOff {
@@ -353,8 +353,7 @@ void Layer::resize(EventInterval baseLength) {
 }
 
 Loop::Loop()
-  : midiClock(false),
-    armed(true), layerCount(0), activeLayer(0), layerArmed(false),
+  : armed(true), layerCount(0), activeLayer(0), layerArmed(false),
     layers(10),
     epochTempo(120)
   {
@@ -412,13 +411,15 @@ void Loop::addEvent(const MidiEvent& ev) {
   }
 
   if (armed) {
-    clear();
+    resetLayers();
 
     epochWall = nowWall;
     epochTime = EventInterval::zero();
     nowTime = epochTime;
 
     armed = false;
+
+    kickClock();
   }
 
   Layer& l = layers[activeLayer];   // TODO: bounds check
@@ -450,6 +451,9 @@ void Loop::keep() {
         timingSpec.meter = ts.meter;
 
       l.resize(EventInterval::zero());
+
+      clockLayer.syncStart(l.length);
+
     } else {
       if (!timingSpec.lockedMeter) {
         timingSpec.meter.beats = 1;
@@ -460,10 +464,10 @@ void Loop::keep() {
       else {
         l.resize(timingSpec.baseLength());
       }
+
+      clockLayer.resize(timingSpec.baseLength());
     }
 
-    if (midiClock)
-      clockLayer.set(l.length);
 
     fprintf(stderr, "first layer: %6.2fbpm, %d/%d\n",
       timingSpec.tempo.inBPM(), timingSpec.meter.beats, timingSpec.meter.base);
@@ -479,12 +483,24 @@ void Loop::keep() {
 
 void Loop::arm() {
   armed = true;
+  kickClock();
+}
+
+void Loop::kickClock() {
+  if (timingSpec.tempoMode != TempoMode::inferred  &&  !clockLayer.isRunning())
+    clockLayer.syncStart(forever<EventInterval>);
 }
 
 void Loop::clear() {
-  clockLayer.clear();
+  clockLayer.stop();
   clearAwatingOff();
 
+  resetLayers();
+
+  Message::clear();
+}
+
+void Loop::resetLayers() {
   for (auto& l : layers)
     l.clear();
 
@@ -492,8 +508,6 @@ void Loop::clear() {
   layerCount = 1;
   activeLayer = 0;
   layerArmed = true;
-
-  Message::clear();
 }
 
 
@@ -579,7 +593,7 @@ void Loop::setTimingSpec(const TimingSpec& ts) {
 }
 
 void Loop::enableMidiClock(bool enable) {
-  midiClock = enable;
+  ClockLayer::setPlayer(enable ? player : nullptr);
 }
 
 Loop::Status Loop::status() const {

@@ -99,7 +99,6 @@ private:
 
   TimingSpec    timingSpec;
 
-  bool midiClock;
   bool armed;
 
   int activeLayer;
@@ -108,6 +107,9 @@ private:
   WallTime armedTime;
 
   std::vector<Layer> layers;
+
+  void resetLayers();
+  void kickClock();
 };
 
 

@@ -17,26 +17,34 @@ namespace {
   static_assert(clockInterval.count() == 70,
     "checking MidiClock interval in Spokes");
 
-  EventFunc player = nullptr;
+  EventFunc playerFunc = nullptr;
 
-  inline void play(const MidiEvent& ev) {
-    if (player) player(ev);
+  inline void player(const MidiEvent& ev) {
+    if (playerFunc) playerFunc(ev);
   }
 }
 
 ClockLayer::ClockLayer() : running(false) { }
 
-void ClockLayer::set(EventInterval length_) {
+void ClockLayer::syncStart(EventInterval length_) {
   length = length_;
   position = EventInterval::zero();
   nextClock = EventInterval::zero();
 
   running = true;
+  player(startEvent);
 }
 
-void ClockLayer::clear() {
+void ClockLayer::stop() {
   running = false;
   player(stopEvent);
+}
+
+void ClockLayer::resize(EventInterval length_) {
+  length = length_;
+
+  if (length != forever<EventInterval>)
+    position = position % length;
 }
 
 EventInterval ClockLayer::next() const {
@@ -48,23 +56,22 @@ EventInterval ClockLayer::advance(EventInterval dt) {
 
   while (nextClock <= dt) {
     dt -= nextClock;
-    position += nextClock;
+    position + nextClock;
 
-    if (position >= length) {
-      player(stopEvent);
-      player(startEvent);
-      position -= length;
-    }
     player(clockEvent);
 
-    nextClock = std::min(clockInterval, length - position);
+    nextClock = clockInterval;
 
   }
   nextClock -= dt;
-  position += dt;  // no need to % length, can't roll here!
+  position += dt;
+
+  if (length != forever<EventInterval>)
+    position = position % length;
+
   return nextClock;
 }
 
 void ClockLayer::setPlayer(EventFunc p) {
-  player = p;
+  playerFunc = p;
 }
