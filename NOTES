@@ -5,8 +5,9 @@ Bicycle To Do
 Flexible Timing
 ---------------
 [x] set tempo hi/lo from command line (?)
-[] tempo knob is a bit fiddly with such a wide range...
-	[] ? restrict to the hi/lo range?
+[x] tempo knob is a bit fiddly with such a wide range...
+	[-] ? restrict to the hi/lo range? -- no, this sucked as a UI
+	[x] just make linear
 
 [] MIDI sync
 	[] snag clock estimator from Pulsar Buddy

@@ -225,19 +225,20 @@ class Tempo {
 public:
   Tempo(const Tempo&) = default;
 
-  template< class Rep, class FromUnits = BeatsPerMinute >
-  explicit Tempo(Rep t) {
-    using Conv = std::ratio_divide<FromUnits, Units>;
-    rate = static_cast<double>(t) * Conv::num / Conv::den;
-  }
-
 private:
+  constexpr Tempo(double r) : rate(r) { };
+
   using Units = std::ratio_divide<Spokes, std::micro>;
   using FromBpmConv = std::ratio_divide<BeatsPerMinute, Units>;
   using ToBpmConv = std::ratio_divide<Units, BeatsPerMinute>;
 
 public:
 	constexpr Tempo() : rate(120.0 * FromBpmConv::num / FromBpmConv::den) { }
+
+  template< class Rep >
+  constexpr static Tempo fromBPM(Rep t) {
+    return Tempo(static_cast<double>(t) * FromBpmConv::num / FromBpmConv::den);
+  }
 
   constexpr double inBPM() const {
     return rate * ToBpmConv::num / ToBpmConv::den;
@@ -305,7 +306,9 @@ struct TimingSpec {
   bool          lockedMeter;  // layer timing will be locked to given meter
 
   TimingSpec()
-    : tempo(120.0), lowTempo(75.0), highTempo(140.0),
+    : tempo(Tempo::fromBPM(120.0)),
+      lowTempo(Tempo::fromBPM(75.0)),
+      highTempo(Tempo::fromBPM(140.0)),
       tempoMode(TempoMode::inferred),
       meter{4, 4},
       lockedMeter(false)

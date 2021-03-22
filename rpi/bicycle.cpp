@@ -25,8 +25,11 @@ void playEvent(const MidiEvent& ev) {
 }
 
 Tempo mapTempoCC(uint8_t v) {
-  double t = 30.0 * std::exp(double(v)/55.0);
-  return Tempo(t);
+  const double lowBPM = 50.0;
+  const double highBPM = 200.0;
+  const double f = (highBPM - lowBPM) / 127.0;
+
+  return Tempo::fromBPM(double(v) * f + lowBPM);
 };
 
 void noteEvent(const MidiEvent& ev) {
@@ -156,12 +159,12 @@ void setup() {
 
   theLoop.enableMidiClock(Args::sendMidiClock);
   if (Args::tempoSet) {
-    ts.tempo = Tempo(Args::tempoBPM);
+    ts.tempo = Tempo::fromBPM(Args::tempoBPM);
     ts.tempoMode = TempoMode::locked;
   }
   if (Args::tempoRangeSet) {
-    ts.lowTempo = Tempo(Args::tempoLowBPM);
-    ts.highTempo = Tempo(Args::tempoHighBPM);
+    ts.lowTempo = Tempo::fromBPM(Args::tempoLowBPM);
+    ts.highTempo = Tempo::fromBPM(Args::tempoHighBPM);
   }
   if (Args::receiveMidiClock)
     ts.tempoMode = TempoMode::synced;

@@ -325,7 +325,7 @@ void Layer::resize(EventInterval baseLength) {
 Loop::Loop()
   : armed(true), layerCount(0), activeLayer(0), layerArmed(false),
     layers(10),
-    epochTempo(120)
+    epochTempo(Tempo::fromBPM(120.0))
   {
     clearAwatingOff();
   }

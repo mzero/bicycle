@@ -168,5 +168,5 @@ TimeSignature estimateTimeSignature(
     msg << bestN << 'x' << meter.beats << '/' << meter.base;
   }
 
-  return { Tempo(phraseBPM), { bestN * meter.beats, meter.base } };
+  return { Tempo::fromBPM(phraseBPM), { bestN * meter.beats, meter.base } };
 }
