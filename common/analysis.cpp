@@ -163,9 +163,7 @@ TimeSignature estimateTimeSignature(
     if (meter.beats == 1)
       msg << bestN << '/' << meter.base;
     else
-      msg << bestN << '*' << meter.beats << '/' << meter.base;
-
-    msg << " @ " << static_cast<int>(phraseBPM) << " bpm";
+      msg << bestN << 'x' << meter.beats << '/' << meter.base;
   }
 
   return { Tempo(phraseBPM), { bestN * meter.beats, meter.base } };

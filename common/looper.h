@@ -75,6 +75,9 @@ public:
   };
 
   struct Status {
+    Tempo tempo;
+    Meter meter;
+
     int   layerCount;
     int   activeLayer;
     bool  armed;

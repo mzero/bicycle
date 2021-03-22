@@ -134,21 +134,30 @@ namespace {
   };
 
 
-  class LengthField : public ValueField<EventInterval> {
+  class MeterField : public ValueField<Meter> {
   public:
-    LengthField(int16_t x, int16_t y, uint16_t w, uint16_t h)
-      : ValueField<EventInterval>(x, y, w, h) { }
+    MeterField(int16_t x, int16_t y, uint16_t w, uint16_t h)
+      : ValueField<Meter>(x, y, w, h) { }
   protected:
-    void drawValue(const EventInterval& t) const {
-      float p = t.inPulses();
-      int i10 = int(round(p*10.0f));
-      display.printf("%3d.%1ds", i10 / 10, i10 % 10);
+    void drawValue(const Meter& meter) const {
+      display.printf("%d/%d", meter.beats, meter.base);
     }
-    EventInterval getValue() const {
-      EventInterval spanT(0);
-      for (int i = 0; i < currentStatus.layerCount; ++i)
-        spanT = std::max(spanT, currentStatus.layers[i].length);
-      return spanT;
+    Meter getValue() const {
+      return currentStatus.meter;
+    }
+  };
+
+
+  class TempoField : public ValueField<int> {
+  public:
+    TempoField(int16_t x, int16_t y, uint16_t w, uint16_t h)
+      : ValueField<int>(x, y, w, h) { }
+  protected:
+    void drawValue(const int& t) const {
+      display.printf("\x1e%d", t);
+    }
+    int getValue() const {
+      return currentStatus.tempo.displayBPM();
     }
   };
 
@@ -196,13 +205,6 @@ namespace {
     bool getValue() const { return currentStatus.armed; }
   };
 
-  class CellCountField : public TextField<int> {
-  public:
-    CellCountField(int16_t x, int16_t y, uint16_t w, uint16_t h)
-      : TextField<int>(x, y, w, h) { }
-  protected:
-    int getValue() const { return Cell::inUse(); }
-  };
 
   class MessageField : public ValueField<std::string> {
   public:
@@ -218,9 +220,9 @@ namespace {
   auto loopField = LoopField(0, 0, 128, 44);
   auto armedField = ArmedField(0, 46, 10, 8);
   auto layerField = LayerField(20, 47, 70, 5);
-  auto lengthField = LengthField(92, 46, 36, 8);
+  auto meterField = MeterField(92, 46, 36, 8);
+  auto tempoField = TempoField(92, 56, 36, 8);
   auto msgField = MessageField(0, 56, 90, 8);
-  auto cellField = CellCountField(92, 56, 36, 8);
 
   //auto mainPage = Layout({&loopField}, 0);
 
@@ -254,10 +256,10 @@ namespace {
     }
 
     drew |= loopField.render(force);
-    drew |= lengthField.render(force);
+    drew |= meterField.render(force);
+    drew |= tempoField.render(force);
     drew |= layerField.render(force);
     drew |= armedField.render(force);
-    drew |= cellField.render(force);
     drew |= msgField.render(force);
 
     if (drew)

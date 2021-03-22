@@ -598,6 +598,9 @@ void Loop::enableMidiClock(bool enable) {
 
 Loop::Status Loop::status() const {
   Status s;
+  s.tempo = timingSpec.tempo;
+  s.meter = timingSpec.meter;
+
   s.layerCount = layerCount;
   s.activeLayer = activeLayer;
   s.armed = armed;
