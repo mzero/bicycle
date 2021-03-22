@@ -28,6 +28,11 @@ struct Meter {
 
   bool unspecified() const { return beats == 0; }
   bool specified() const { return beats != 0; }
+
+  bool operator==(const Meter& rhs) const
+    { return this->beats == rhs.beats && this->base == rhs.base; }
+  bool operator!=(const Meter& rhs) const
+    { return !(*this == rhs); }
 };
 
 
