@@ -223,7 +223,7 @@ using BeatsPerMinute = std::ratio_divide<QuarterNotes, std::ratio<60>>;
 
 class Tempo {
 public:
-	Tempo(const Tempo&) = default;
+  Tempo(const Tempo&) = default;
 
   template< class Rep, class FromUnits = BeatsPerMinute >
   explicit Tempo(Rep t) {
@@ -231,9 +231,20 @@ public:
     rate = static_cast<double>(t) * Conv::num / Conv::den;
   }
 
-  double inBPM() const {
-    using Conv = std::ratio_divide<Units, BeatsPerMinute>;
-    return rate * Conv::num / Conv::den;
+private:
+  using Units = std::ratio_divide<Spokes, std::micro>;
+  using FromBpmConv = std::ratio_divide<BeatsPerMinute, Units>;
+  using ToBpmConv = std::ratio_divide<Units, BeatsPerMinute>;
+
+public:
+	constexpr Tempo() : rate(120.0 * FromBpmConv::num / FromBpmConv::den) { }
+
+  constexpr double inBPM() const {
+    return rate * ToBpmConv::num / ToBpmConv::den;
+  }
+
+  constexpr int displayBPM() const {
+    return int(std::round(this->inBPM()));
   }
 
   TimeInterval toTimeInterval(EventInterval d) const {
@@ -267,7 +278,6 @@ public:
   }
 
 private:
-  using Units = std::ratio_divide<Spokes, std::micro>;
   double rate;
 };
 

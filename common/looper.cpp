@@ -574,16 +574,16 @@ void Loop::setTimingSpec(const TimingSpec& ts) {
     Message msg;
     switch (ts.tempoMode) {
       case TempoMode::inferred:
-        msg << int(ts.lowTempo.inBPM()) << '~' << int(ts.highTempo.inBPM());
+        msg << ts.lowTempo.displayBPM() << '~' << ts.highTempo.displayBPM();
         break;
       case TempoMode::locked:
-        msg << int(ts.tempo.inBPM()) << '!';
+        msg << ts.tempo.displayBPM() << '!';
         break;
       case TempoMode::synced:
         msg << "sync";
         break;
       default:
-        msg << int(ts.tempo.inBPM()) << '!';
+        msg << ts.tempo.displayBPM() << '!';
     }
 
     msg << ' ' << ts.meter.beats << '/' << ts.meter.base;
