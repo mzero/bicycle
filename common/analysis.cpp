@@ -1,6 +1,7 @@
 #include "analysis.h"
 
 #include <cmath>
+#include <iomanip>
 
 #include "cell.h"
 #include "message.h"
@@ -15,7 +16,7 @@ EventInterval syncLength(
     return EventInterval::zero();
 
   Log log;
-  log << "layer sync: "
+  log << "syncLength: "
     << base.count() << " :: " << len.count()
     << " (" << maxShorten.count() << ") = ";
 
@@ -74,6 +75,10 @@ float beatError(float x) {
 TimeSignature estimateTimeSignature(
     const TimingSpec& spec, EventInterval recLength, const Cell* firstCell) {
 
+  Log log;
+  log << "estimateTimeSignature:\n";
+  log << std::setprecision(2) << std::fixed;
+
   Meter meter = spec.meter;
   if (!spec.lockedMeter) meter.beats = 1;
 
@@ -89,12 +94,13 @@ TimeSignature estimateTimeSignature(
   int minN = int(ceilf(phraseSec / maxBaseSec));
   int maxN = int(floorf(phraseSec / minBaseSec));
 
-  fprintf(stderr, "est: meter            %d/%d\n", meter.beats, meter.base);
-  fprintf(stderr, "     baseUnit count   %d\n", baseUnit.count());
-  fprintf(stderr, "     baseSec range    %6.4fs ~ %6.4fs\n",
-    minBaseSec.count(), maxBaseSec.count());
-  fprintf(stderr, "     phraseSec        %6.4fs\n", phraseSec.count());
-  fprintf(stderr, "     range of N       %d ~ %d\n", minN, maxN);
+
+  log << "     meter            " << meter.beats << '/' << meter.base << '\n';
+  log << "     baseUnit count   " << baseUnit.count() << '\n';
+  log << "     baseSec range    " << minBaseSec.count()
+                                  << '~' << maxBaseSec.count() << '\n';
+  log << "     phraseSec        " << phraseSec.count() << '\n';
+  log << "     range of N       " << minN << '~' << maxN << '\n';
 
   int bestN = 0;
   float bestErr = INFINITY;
@@ -124,8 +130,7 @@ TimeSignature estimateTimeSignature(
   }
 
   {
-    Log log;
-    log << "layer deltas: ";
+    log << "     layer deltas     ";
     auto p = firstCell;
     EventInterval t(0);
     while (p) {
@@ -134,7 +139,8 @@ TimeSignature estimateTimeSignature(
       p = p->next();
       if (p == firstCell) break;
     }
-    log << " = " << t.count();
+    log << '\n';
+    log << "     layer total      " << t.count() << '\n';
   }
 
   if (bestN == 0)
@@ -144,26 +150,22 @@ TimeSignature estimateTimeSignature(
   float phrasePerMinute = std::chrono::minutes(1) / phraseSec;
   float phraseBPM = phrasePerMinute * bestN * baseBeats;
 
-  fprintf(stderr, "est: baseBeats         %8.2f\n", baseBeats);
-  fprintf(stderr, "     phrasePerMinute   %8.2f\n", phrasePerMinute);
-  fprintf(stderr, "     phraseBPM         %8.2f\n", phraseBPM);
+  log << std::setw(8);
+  log << "     baseBeats        " << baseBeats << '\n';
+  log << "     phrasePerMinute  " << phrasePerMinute << '\n';
+  log << "     phraseBPM        " << phraseBPM << '\n';
 
-  {
-    Log log;
-    log << "meter: ";
-    if (meter.beats == 1)
-      log << bestN << '/' << meter.base;
-    else
-      log << bestN << '*' << meter.beats << '/' << meter.base;
-    log << " (" << minN << "," << maxN << ") @ "
-      << phraseBPM << " bpm";
+  Message msg;
 
-    Message msg;
-
-    if (meter.beats == 1)
-      msg << bestN << '/' << meter.base;
-    else
-      msg << bestN << 'x' << meter.beats << '/' << meter.base;
+  if (meter.beats == 1) {
+    log << "     meter: "
+        << bestN << '/' << meter.base << '\n';
+    msg << bestN << '/' << meter.base;
+  }
+  else {
+    log << "     meter: "
+        << bestN << 'x' << meter.beats << '/' << meter.base << '\n';
+    msg << bestN << 'x' << meter.beats << '/' << meter.base;
   }
 
   return { Tempo(phraseBPM), { bestN * meter.beats, meter.base } };

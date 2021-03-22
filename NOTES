@@ -4,7 +4,7 @@ Bicycle To Do
 
 Flexible Timing
 ---------------
-[] display tempo & meter in a field all the time
+[x] display tempo & meter in a field all the time
 [] MIDI channel indicators under track icons
 
 [] set tempo hi/lo from command line (?)
@@ -16,11 +16,13 @@ Flexible Timing
 [] expose position to estimator
 [] accept tempo updates from estimator
 
-[] take out all the debugging fprintf() calls
+[x] take out all the debugging fprintf() calls
 [] when to use float, when to use double?
 	- should this be keyed on processor?
 [] what to do with clock when armed and TempoMode::inferred?
 	- kill clock on first note played? or keep it running?
+[] when TempoMode::inferred, and before anything is playing, the
+	tempo display field should show "---"
 
 On Deck
 -------
@@ -44,6 +46,9 @@ Bugs
 [] handle failed beat estimates better
 	- don't generate MIDI clock in these cases?
 
+
+[] consider using {fmt} for Log and Message functionality
+	https://fmt.dev/latest/index.html
 
 Features
 --------

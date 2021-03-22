@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstring>
+#include <iomanip>
 
 #include "analysis.h"
 #include "cell.h"
@@ -288,7 +289,6 @@ bool Layer::empty() const {
 
 void Layer::retime(const Tempo& from, const Tempo& to) {
   double r = Tempo::retimeRate(from, to);
-  fprintf(stderr, "retime ratio is %8.4f\n", r);
 
   Cell* start = firstCell ? firstCell : recentCell;
 
@@ -308,13 +308,6 @@ void Layer::retime(const Tempo& from, const Tempo& to) {
       // FIXME: limit to legal range of durations
     p->nextTime = newNextEvent - newEventStart;
 
-    fprintf(stderr, "  @ %6d/%6d: dur = %6d/%6d (Δ%6d/%6d) next = %6d/%6d (Δ%6d/%6d)\n",
-      oldEventStart.count(), newEventStart.count(),
-      oldEventEnd.count(), newEventEnd.count(),
-      oldCell.duration.count(), p->duration.count(),
-      oldNextEvent.count(), newNextEvent.count(),
-      oldCell.nextTime.count(), p->nextTime.count());
-
     oldEventStart = oldNextEvent;
     newEventStart = newNextEvent;
 
@@ -322,16 +315,9 @@ void Layer::retime(const Tempo& from, const Tempo& to) {
     if (p == start) break;
   }
 
-  fprintf(stderr, "  old: len %6d, pos %6d, tsr %6d\n",
-    length.count(), position.count(), timeSinceRecent.count());
-
   length = newEventStart;
   position = position.retime(r);
   timeSinceRecent = timeSinceRecent.retime(r);
-
-  fprintf(stderr, "  new: len %6d, pos %6d, tsr %6d\n",
-    length.count(), position.count(), timeSinceRecent.count());
-
 }
 
 // FIXME: There is a relationship between keep() and resize() - they should
@@ -340,9 +326,6 @@ void Layer::retime(const Tempo& from, const Tempo& to) {
 
 void Layer::resize(EventInterval baseLength) {
   EventInterval adj = syncLength(baseLength, length, timeSinceRecent);
-
-  fprintf(stderr, "Layer::resize: resize(%d) adjusting by %d\n",
-    baseLength.count(), adj.count());
 
   recentCell->nextTime += adj;
   length += adj;
@@ -468,9 +451,11 @@ void Loop::keep() {
       clockLayer.resize(timingSpec.baseLength());
     }
 
-
-    fprintf(stderr, "first layer: %6.2fbpm, %d/%d\n",
-      timingSpec.tempo.inBPM(), timingSpec.meter.beats, timingSpec.meter.base);
+    Log log;
+    log << "first layer: " << std::setprecision(2) << std::fixed
+        << timingSpec.tempo.inBPM() << "bpm "
+        << timingSpec.meter.beats << '/'
+        << timingSpec.meter.base << '\n';
   }
   else {
     l.resize(timingSpec.baseLength());
