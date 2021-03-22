@@ -4,16 +4,15 @@ Bicycle To Do
 
 Flexible Timing
 ---------------
-[x] MIDI channel indicators under track icons
-
-[] set tempo hi/lo from command line (?)
+[x] set tempo hi/lo from command line (?)
 [] tempo knob is a bit fiddly with such a wide range...
 	[] ? restrict to the hi/lo range?
 
-[] snag clock estimator from Pulsar Buddy
-[] feed MIDI events to estimator
-[] expose position to estimator
-[] accept tempo updates from estimator
+[] MIDI sync
+	[] snag clock estimator from Pulsar Buddy
+	[] feed MIDI events to estimator
+	[] expose position to estimator
+	[] accept tempo updates from estimator
 
 [] when to use float, when to use double?
 	- should this be keyed on processor?

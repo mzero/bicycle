@@ -13,6 +13,10 @@ namespace Args {
   bool tempoSet = false;
   double tempoBPM = 0.0;
 
+  bool tempoRangeSet = false;
+  double tempoLowBPM = 0.0;
+  double tempoHighBPM = 0.0;
+
   bool meterSet = false;
   int meterBeats;
   int meterBase;
@@ -23,6 +27,22 @@ namespace Args {
     tempoSet = true;
     tempoBPM = t;
   }
+
+  using tempo_range_t = std::vector<double>;
+
+  void setTempoRange(const tempo_range_t& vs) {
+    tempoRangeSet = true;
+
+    switch (vs.size()) {
+      case 2:
+        tempoLowBPM = std::min(vs[0], vs[1]);
+        tempoHighBPM = std::max(vs[0], vs[1]);
+        break;
+
+      default:
+        throw CLI::ValidationError("tempo range should two BPM values, like: 75-140");
+    }
+  };
 
   using meter_arg_t = std::vector<unsigned int>;
 
@@ -53,6 +73,10 @@ namespace Args {
     app.add_flag("-S,--sync-in", receiveMidiClock, "receive MIDI clock sync");
 
     app.add_option_function<double>("-t,--tempo", setTempo, "set a fixed tempo");
+    app.add_option_function<tempo_range_t>("-r,--range", setTempoRange, "set tempo range")
+      ->delimiter('-')
+      ->type_name("TEMPOS");
+
     app.add_option_function<meter_arg_t>("-m,--meter", setMeter, "set a fixed meter")
       ->delimiter('/')
       ->type_name("METER");

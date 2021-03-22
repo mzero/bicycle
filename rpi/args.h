@@ -17,6 +17,10 @@ namespace Args {
   extern bool tempoSet;
   extern double tempoBPM;
 
+  extern bool tempoRangeSet;
+  extern double tempoLowBPM;
+  extern double tempoHighBPM;
+
   extern bool meterSet;
   extern int meterBeats;  // 0 means unspecified
   extern int meterBase;

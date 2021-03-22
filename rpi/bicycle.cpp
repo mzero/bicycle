@@ -159,6 +159,10 @@ void setup() {
     ts.tempo = Tempo(Args::tempoBPM);
     ts.tempoMode = TempoMode::locked;
   }
+  if (Args::tempoRangeSet) {
+    ts.lowTempo = Tempo(Args::tempoLowBPM);
+    ts.highTempo = Tempo(Args::tempoHighBPM);
+  }
   if (Args::receiveMidiClock)
     ts.tempoMode = TempoMode::synced;
   if (Args::meterSet) {
