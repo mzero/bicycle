@@ -161,6 +161,28 @@ namespace {
     }
   };
 
+  const unsigned char channelSigils[][4] = {
+    { 0x00, 0xf0, 0x90, 0x00 },
+    { 0x00, 0x90, 0xf0, 0x00 },
+    { 0x60, 0x20, 0x20, 0x60 },
+    { 0x60, 0x40, 0x40, 0x60 },
+
+    { 0x10, 0x20, 0xc0, 0xc0 },
+    { 0xc0, 0xc0, 0x20, 0x10 },
+    { 0x30, 0x30, 0x40, 0x80 },
+    { 0x80, 0x40, 0x30, 0x30 },
+
+    { 0x00, 0xf0, 0x30, 0x00 },
+    { 0x00, 0xc0, 0xf0, 0x00 },
+    { 0x20, 0x20, 0x60, 0x60 },
+    { 0x60, 0x60, 0x40, 0x40 },
+
+    { 0x00, 0xe0, 0x70, 0x00 },
+    { 0x00, 0x70, 0xe0, 0x00 },
+    { 0x40, 0x60, 0x60, 0x20 },
+    { 0x20, 0x60, 0x60, 0x40 },
+  };
+
 
   class LayerField : public Field {
   public:
@@ -180,6 +202,10 @@ namespace {
         else if (currentStatus.layers[i].muted)
                                       display.drawFastHLine(p, y + 3, 4, c);
         else                          display.fillRect(p, y, 4, 4, c);
+
+        int ch = currentStatus.layers[i].channel;
+        if (ch != MidiEvent::noChannel)
+          display.drawBitmap(p, y+5, channelSigils[ch], 4, 4, foreColor());
 
         p += 5 + (i % 3 == 2 ? 3 : 0);
       }
@@ -217,9 +243,9 @@ namespace {
     std::string getValue() const { return Message::lastMessage(); }
 };
 
-  auto loopField = LoopField(0, 0, 128, 44);
-  auto armedField = ArmedField(0, 46, 10, 8);
-  auto layerField = LayerField(20, 47, 70, 5);
+  auto loopField = LoopField(0, 0, 128, 40);
+  auto armedField = ArmedField(0, 40, 10, 8);
+  auto layerField = LayerField(20, 42, 70, 9);
   auto meterField = MeterField(92, 46, 36, 8);
   auto tempoField = TempoField(92, 56, 36, 8);
   auto msgField = MessageField(0, 56, 90, 8);

@@ -56,6 +56,10 @@ union MidiEvent {
   bool isCC() const
     { return (status & 0xf0) == 0xb0; }
 
+  static const int noChannel = 17;
+  int channel() const
+    { return ((status & 0xf0) == 0xf0) ? noChannel : (status & 0x0f); }
+
   MidiEvent() { }
   MidiEvent(uint8_t s)                         : status(s), data1( 0), data2( 0) { }
   MidiEvent(uint8_t s, uint8_t d1)             : status(s), data1(d1), data2( 0) { }

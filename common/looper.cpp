@@ -139,7 +139,8 @@ namespace {
 Layer::Layer()
   : muted(false), volume(unityVolume),
     firstCell(nullptr), recentCell(nullptr),
-    timeSinceRecent(0), length(0), position(0)
+    timeSinceRecent(0), length(0), position(0),
+    channel(MidiEvent::noChannel)
   { }
 
 Layer::~Layer()
@@ -175,6 +176,7 @@ EventInterval Layer::advance(EventInterval dt) {
         timeSinceRecent = EventInterval::zero();
         recentCell = nextCell;
         playCell(*recentCell, muted, volume);
+        channel = recentCell->event.channel();
       }
 
       timeSinceRecent += dt;
@@ -205,23 +207,6 @@ void Layer::addEvent(EventInterval now, const MidiEvent& ev) {
   if (ev.isNoteOn())
     startAwaitingOff(now, newCell);
 
-/* FIXME
-  if (!recentCell) {
-    // first time through, add the "start" note
-    Cell* startCell = Cell::alloc();
-    if (startCell) {
-      startCell->event = { 0x90, 48, 100 };
-        // FIXME: should be defined somewhere
-      startCell->layer = 0xff; // a magic layer!
-      startCell->duration = 3;
-
-      recentCell = startCell;
-      firstCell = recentCell;
-      Util::playCell(*this, *recentCell);
-    }
-  }
-*/
-
   if (recentCell) {
     Cell* nextCell = recentCell->next();
     if (nextCell) {
@@ -238,6 +223,7 @@ void Layer::addEvent(EventInterval now, const MidiEvent& ev) {
 
   recentCell = newCell;
   timeSinceRecent = EventInterval::zero();
+  channel = ev.channel();
 }
 
 bool Layer::keep() {
@@ -273,6 +259,7 @@ void Layer::clear() {
   timeSinceRecent = EventInterval::zero();
   length = EventInterval::zero();
   position = EventInterval::zero();
+  channel = MidiEvent::noChannel;
 
   muted = false;
   volume = 100;
@@ -597,10 +584,12 @@ Loop::Status Loop::status() const {
       auto& l = layers[i];
       sl.length = l.length;
       sl.position = l.position;
+      sl.channel = l.channel;
       sl.muted = l.muted;
     } else {
       sl.length = EventInterval::zero();
       sl.position = EventInterval::zero();
+      sl.channel = MidiEvent::noChannel;
       sl.muted = false;
     }
   }

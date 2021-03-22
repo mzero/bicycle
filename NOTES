@@ -4,8 +4,7 @@ Bicycle To Do
 
 Flexible Timing
 ---------------
-[x] display tempo & meter in a field all the time
-[] MIDI channel indicators under track icons
+[x] MIDI channel indicators under track icons
 
 [] set tempo hi/lo from command line (?)
 [] tempo knob is a bit fiddly with such a wide range...
@@ -16,7 +15,6 @@ Flexible Timing
 [] expose position to estimator
 [] accept tempo updates from estimator
 
-[x] take out all the debugging fprintf() calls
 [] when to use float, when to use double?
 	- should this be keyed on processor?
 [] what to do with clock when armed and TempoMode::inferred?
@@ -45,6 +43,11 @@ Bugs
 ----
 [] handle failed beat estimates better
 	- don't generate MIDI clock in these cases?
+
+[] when 9 or more layers....
+	- reduce each layer's trace to 1 or 2 pixels high, scrap end caps
+	- fiddle with position of layers field and armed field to fit stuff
+	- perhaps scrap message field in this case
 
 
 [] consider using {fmt} for Log and Message functionality

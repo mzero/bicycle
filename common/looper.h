@@ -39,6 +39,8 @@ private:
   EventInterval length;
   EventInterval position;
 
+  int channel;
+
   friend class Loop;
 };
 
@@ -71,6 +73,7 @@ public:
   struct LayerStatus {
     EventInterval length;
     EventInterval position;
+    int           channel;
     bool          muted;
   };
 
